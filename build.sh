@@ -30,6 +30,14 @@ HEAD
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 META
+    cat <<'ICONS'
+<link rel="icon" href="icons/favicon.ico" sizes="48x48">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="icons/icon-16.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="manifest" href="icons/site.webmanifest">
+<meta name="theme-color" content="#77010b">
+ICONS
     cat <<'GC'
 <script data-goatcounter="https://skier-or-ikear.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 GC
@@ -49,5 +57,6 @@ HEAD
 done
 cp data.js docs/data.js
 cp og.png docs/og.png
+rm -rf docs/icons && cp -R icons docs/icons
 touch docs/.nojekyll
-echo "Built docs/index.html, docs/sprint.html, docs/data.js, docs/og.png"
+echo "Built docs/index.html, docs/sprint.html, docs/data.js, docs/og.png, docs/icons/"
