@@ -167,6 +167,7 @@ button.chosen:disabled { filter: none; box-shadow: 0 0 0 3px var(--bg), 0 0 0 6p
 .toast { min-height: 1.2em; text-align: center; color: var(--muted); font-size: .85rem; margin: 0; }
 .share { display: flex; flex-direction: column; gap: 4px; }
 .b-share { width: 100%; min-height: 52px; font-size: 1.05rem; }
+.credit { display: block; margin-top: 8px; font-size: .8rem; color: var(--ink); font-style: italic; text-wrap: balance; }
 footer { text-align: center; font-size: .72rem; color: var(--muted); line-height: 1.4; }
 
 @media (prefers-reduced-motion: reduce) { .name.pop { animation: none; } button, .dot { transition: none; } }
@@ -258,7 +259,7 @@ details.names summary { cursor: pointer; color: var(--muted); font-weight: 600; 
   </header>
   <main id="main"></main>
   <div class="share"><button class="b-ghost b-share" id="btn-share">Share with friends</button><p class="toast" id="share-toast"></p></div>
-  <footer>Opponents and rankings from the FIS Cross-Country World Cup 2025/26 sprint standings; their race times are simulated. Skier names also from the FIS registers of active Swedish and Norwegian racers. Product names from the IKEA range and Lars Petrus's IKEA Dictionary. Just for fun; not affiliated with FIS or IKEA.</footer>
+  <footer>Opponents and rankings from the FIS Cross-Country World Cup 2025/26 sprint standings; their race times are simulated. Skier names also from the FIS registers of active Swedish and Norwegian racers. Product names from the IKEA range and Lars Petrus's IKEA Dictionary. Just for fun; not affiliated with FIS or IKEA.<span class="credit">Made with good humour and a love-hate relationship with skiing and assembling furniture by Gord Ross 🇨🇦</span></footer>
 </div>
 
 <script src="data.js"></script>
