@@ -219,6 +219,32 @@ footer { text-align: center; font-size: .72rem; color: var(--muted); line-height
 <script>
 const ROUNDS = 7;
 
+// Question lines and reactions rotate so each game reads a little differently.
+const PROMPTS = [
+  "World Cup cross-country skier, or something you build with an Allen key?",
+  "Elite VO2max, or comes with one spare screw?",
+  "Double-poles 50 km, or holds 50 kg per shelf?",
+  "Lives in the wax room, or lives in the warehouse aisle?",
+  "Knows their lactate threshold, or knows aisle 14, bin 22?",
+  "Races in Lycra, or comes in a flat box?",
+  "Skate or classic? Or particleboard?",
+  "Vasaloppet finisher, or Saturday-afternoon argument?",
+  "Grinds up Alpe Cermis, or wobbles on uneven floors?",
+  "Eats 6,000 calories a day, or sold beside the meatballs?",
+  "Has a coach, a physio and a wax tech, or a 24-step diagram with no words?",
+];
+const RIGHT = ["Correct!", "Nailed it.", "Clean pass.", "Perfect kick wax.", "Nailed the double pole.",
+  "Fully assembled. No leftover screws.", "Podium!", "Glide for days."];
+const WRONG = ["Nope.", "Wrong wax.", "Fell on the downhill.", "Missing screw.", "Built it upside down.",
+  "Broke a pole.", "Herringboned the wrong way.", "Step 14 makes no sense.", "Klister on the glide zone."];
+let lastPrompt = -1;
+function nextPrompt() {
+  let i;
+  do { i = Math.floor(Math.random() * PROMPTS.length); } while (i === lastPrompt);
+  lastPrompt = i;
+  return PROMPTS[i];
+}
+
 const RANKS = [
   [0, "Flat-packed. Still in the box."],
   [2, "Missing a few dowels."],
@@ -292,7 +318,7 @@ function renderQuestion() {
     <section class="card" aria-live="polite">
       <div class="eyebrow">Question ${game.i + 1} of ${ROUNDS}</div>
       <div class="name pop" style="font-size:${nameSize(q.n)}">${esc(q.n)}</div>
-      <p class="hint">World Cup cross-country skier, or something you build with an Allen key?</p>
+      <p class="hint">${esc(nextPrompt())}</p>
     </section>
     <div class="answers">
       <button class="b-skier" id="btn-skier" data-k="skier">Skier<small>on snow</small></button>
@@ -329,8 +355,7 @@ function answer(kind) {
     fact = [q.fact, q.both.fact].filter(Boolean).join(" ") + " Either answer counts.";
   } else {
     badge = q.kind === "skier" ? bib() : tag(q.type);
-    verdict = ok ? ["ok", pickOne(["Correct!", "Nailed it.", "Clean pass.", "Yes!"])]
-                 : ["no", pickOne(["Nope.", "Fell over.", "Wrong wax.", "Missing screw."])];
+    verdict = ok ? ["ok", pickOne(RIGHT)] : ["no", pickOne(WRONG)];
   }
   const card = $main.querySelector(".card");
   card.innerHTML = `
