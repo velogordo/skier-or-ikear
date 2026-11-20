@@ -271,6 +271,11 @@ details.names summary { cursor: pointer; color: var(--muted); font-weight: 600; 
 .path .arrow { color: var(--muted); }
 .podium { width: 100%; font-size: .9rem; color: var(--muted); }
 .podium b { color: var(--ink); }
+/* Block of cheese for the rest of the final (a nod to the World Cup's cheese sponsor) */
+.cheese { width: 130px; height: 96px; display: block; margin: 0 auto; overflow: visible; filter: drop-shadow(0 8px 10px rgba(120, 80, 10, .22)); animation: globe-in .6s cubic-bezier(.2,1.4,.4,1) both; }
+.cheese.big { width: 160px; height: 118px; }
+.cheese-note { font-size: .85rem; color: var(--muted); margin: -4px 0 0; }
+@media (prefers-reduced-motion: reduce) { .cheese { animation: none; } }
 /* Crystal globe for the winner */
 .globe { width: 120px; height: 160px; display: block; margin: 0 auto; overflow: visible; filter: drop-shadow(0 10px 14px rgba(40, 90, 140, .25)); animation: globe-in .6s cubic-bezier(.2,1.4,.4,1) both; }
 .globe.big { width: 150px; height: 200px; }
@@ -386,6 +391,16 @@ const globeSvg = (size = "") => `<svg class="globe ${size}" viewBox="0 0 120 160
   <path class="spark" d="M100 18 l2.5 7 7 2.5 -7 2.5 -2.5 7 -2.5 -7 -7 -2.5 7 -2.5 Z" fill="#f2d48a"/>
   <path class="spark" d="M16 30 l2 5.5 5.5 2 -5.5 2 -2 5.5 -2 -5.5 -5.5 -2 5.5 -2 Z" fill="#ffffff" stroke="#8fbfe0" stroke-width=".6"/>
   <path class="spark" d="M104 78 l1.8 5 5 1.8 -5 1.8 -1.8 5 -1.8 -5 -5 -1.8 5 -1.8 Z" fill="#ffffff" stroke="#8fbfe0" stroke-width=".6"/>
+</svg>`;
+
+// Block of cheese for finishing 2nd to 6th in the final.
+const cheeseSvg = (size = "") => `<svg class="cheese ${size}" viewBox="0 0 140 100" role="img" aria-label="Block of cheese">
+  <path d="M18 46 L56 28 L126 40 L88 58 Z" fill="#ffe28f" stroke="#b9861c" stroke-width="2" stroke-linejoin="round"/>
+  <path d="M18 46 L88 58 L88 90 L18 78 Z" fill="#f6c945" stroke="#b9861c" stroke-width="2" stroke-linejoin="round"/>
+  <path d="M88 58 L126 40 L126 72 L88 90 Z" fill="#e2ac2e" stroke="#b9861c" stroke-width="2" stroke-linejoin="round"/>
+  <g fill="#d99f22"><ellipse cx="36" cy="62" rx="6" ry="5"/><ellipse cx="62" cy="74" rx="8" ry="6"/><ellipse cx="74" cy="61" rx="4" ry="3.5"/><ellipse cx="44" cy="78" rx="3.5" ry="3"/></g>
+  <g fill="#e8b93a"><ellipse cx="70" cy="44" rx="6" ry="3"/><ellipse cx="98" cy="45" rx="4" ry="2"/><ellipse cx="48" cy="40" rx="3.5" ry="1.8"/></g>
+  <g fill="#c48e1c"><ellipse cx="104" cy="66" rx="4" ry="5"/><ellipse cx="116" cy="54" rx="3" ry="3.5"/></g>
 </svg>`;
 
 // ---------- Race simulation ----------
@@ -670,7 +685,7 @@ async function results(you) {
       outcome = me.place;
       R.path.push({ key: "F", txt: ord(me.place), cls: "" });
       const head = me.place === 1 ? `${globeSvg()}<div class="verdict ok">World Cup sprint champion!</div>`
-        : `<div class="verdict ${me.place <= 3 ? "ok" : "both"}">${ord(me.place)} in the final${me.place <= 3 ? ". Podium!" : ""}</div>`;
+        : `${cheeseSvg()}<div class="verdict ${me.place <= 3 ? "ok" : "both"}">${ord(me.place)} in the final${me.place <= 3 ? ". Podium!" : ""}</div><p class="cheese-note">No globe today, but you take home a block of cheese.</p>`;
       html = `<div class="eyebrow">${label}</div>${head}${resultsTable(heat, { nTop: 0 })}`;
     } else {
       const llSet = new Set(R.adv.ll.map(x => x.e));
@@ -742,11 +757,11 @@ function finishRace() {
   const pathHtml = R.path.map((p, i) => `${i ? `<span class="arrow">→</span>` : ""}<span class="step ${p.cls}"><b>${p.key}</b>${p.txt}</span>`).join("");
   const podiumTxt = podium.map((x, i) => `${["🥇","🥈","🥉"][i]} <b>${esc(x.e.you ? "You" : x.e.name)}</b> ${x.e.you ? "" : flag(x.e.nat)}`).join("&nbsp;&nbsp;");
   const share = `Skier or IKEA-r? Sprint 🏁 ${R.gender === "M" ? "Men" : "Women"}\n` + R.path.map(p => `${p.key} ${p.txt}`).join(" → ")
-    + (yourPlace === 1 ? "\n🏆 Crystal globe!" : "");
+    + (yourPlace === 1 ? "\n🏆 Crystal globe!" : yourPlace > 1 ? "\n🧀 Took home the cheese" : "");
   $chip.textContent = "Sprint";
   $main.innerHTML = `<section class="card" style="gap:16px">
       <div class="eyebrow">${R.gender === "M" ? "Men's" : "Women's"} sprint</div>
-      ${yourPlace === 1 ? globeSvg("big") : ""}
+      ${yourPlace === 1 ? globeSvg("big") : yourPlace > 1 ? cheeseSvg("big") : ""}
       <div class="title">${esc(headline)}</div>
       <div class="path">${pathHtml}</div>
       <p class="podium">Podium: ${podiumTxt}</p>
