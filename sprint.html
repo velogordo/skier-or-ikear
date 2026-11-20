@@ -545,7 +545,16 @@ function intro() {
     const top = R.field.slice(1, 6).map(e => `${esc(e.name)} ${flag(e.nat)}`).join(", ");
     body = `<div class="eyebrow">${R.challenge ? "Challenge race" : "Race"} #${R.seed} · Qualification</div>
       <div class="title">8 names. Beat the clock.</div>
-      <p class="small">60 starters, top 30 go through to the quarterfinals. Favourites: ${top}.</p>`;
+      <p class="small">60 starters, top 30 go through to the quarterfinals. Favourites: ${top}.</p>
+      <details class="names"><summary>How sprint works</summary>
+        <ul class="format" style="margin-top:10px">
+          <li><b>Q</b><span>Qualification: 8 names against the clock. Top 30 of 60 go through.</span></li>
+          <li><b>QF</b><span>Quarterfinal: 5 names, 6 racers. Top 2 go through, plus 2 lucky losers on time.</span></li>
+          <li><b>SF</b><span>Semifinal: same again, with harder names.</span></li>
+          <li><b>F</b><span>Final: 5 names, 6 racers, one champion.</span></li>
+        </ul>
+        <p class="small" style="margin-top:8px">Wrong answers cost <b class="penalty">+${PENALTY} s</b>, then +${PENALTY + PENALTY_STEP}, +${PENALTY + 2 * PENALTY_STEP}… and you stumble for ${STUMBLE} s. Tapping before you can read the name is a false start.</p>
+      </details>`;
   } else {
     const { i, heat } = yourHeat(st.key);
     const label = st.key === "F" ? "Final" : `${st.label} ${i + 1}`;
@@ -803,7 +812,7 @@ function finishRace() {
       <button class="b-ghost" id="btn-copy">Challenge a friend</button>
     </div>
     <p class="toast" id="toast"></p>
-    <p class="small"><a href="index.html">Classic game</a></p>`;
+    <p class="small"><a href="index.html">Change mode</a></p>`;
   document.getElementById("btn-again").onclick = () => { clearHash(); newRace(R.gender); };
   document.getElementById("btn-copy").onclick = () =>
     shareOrCopy(share, raceLink(), document.getElementById("toast"), "Challenge copied. Paste it in the group chat.");
@@ -816,9 +825,12 @@ document.addEventListener("keydown", e => {
   if (k === "i" || k === "arrowright") R.answer("ikea");
 });
 
-{ // A challenge link (#race-m-12345 or #race-w-12345) offers that exact race.
+{ // #start-m / #start-w (from the title screen) go straight to a new race;
+  // a challenge link (#race-m-12345 or #race-w-12345) offers that exact race.
+  const go = location.hash.match(/^#start-([mw])$/);
   const m = location.hash.match(/^#race-([mw])-(\d{5})$/);
-  start(m ? { gender: m[1].toUpperCase(), seed: +m[2] } : null);
+  if (go) { clearHash(); newRace(go[1].toUpperCase()); }
+  else start(m ? { gender: m[1].toUpperCase(), seed: +m[2] } : null);
 }
 setupShare("sprint.html");
 window.addEventListener("hashchange", () => location.reload());   // a challenge link opened in an open tab

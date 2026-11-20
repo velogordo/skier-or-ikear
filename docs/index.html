@@ -197,6 +197,33 @@ button.chosen:disabled { filter: none; box-shadow: 0 0 0 3px var(--bg), 0 0 0 6p
 .b-share { min-height: 36px; padding: 6px 16px; font-size: .85rem; border-width: 1.5px; border-radius: 999px; }
 footer a { color: var(--ink); font-weight: 600; }
 footer { text-align: center; font-size: .72rem; color: var(--muted); line-height: 1.4; }
+/* Title screen: premise, then the two modes as equal choices */
+a.logo { text-decoration: none; color: inherit; }
+.title-screen { display: flex; flex-direction: column; gap: 14px; }
+.kicker { font-size: .68rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); text-align: center; margin: 0; }
+.big-title { font-family: var(--display); font-weight: 800; font-size: clamp(2.6rem, 13vw, 3.4rem); line-height: .92; letter-spacing: -.02em; margin: 6px 0 0; text-align: center; text-wrap: balance; }
+.big-title .s { color: var(--wax); } .big-title .i { color: var(--kraft); white-space: nowrap; }
+.premise { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 14px 16px; text-align: center; display: flex; flex-direction: column; gap: 4px; }
+.premise .q { font-family: var(--display); font-weight: 800; font-size: 1.15rem; line-height: 1.15; margin: 0; color: var(--ink); text-wrap: balance; }
+.premise .q + .q { color: var(--wax); }
+.premise p { margin: 6px 0 0; font-size: .88rem; line-height: 1.4; color: var(--muted); text-wrap: balance; }
+.pair { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; margin-top: 8px; font-size: .75rem; font-weight: 700; }
+.pair .sk { border: 2px solid var(--wax); color: var(--wax); border-radius: 6px; padding: 2px 8px; }
+.pair .ik { background: var(--kraft); color: var(--kraft-ink); border-radius: 6px; padding: 4px 8px; }
+.modes { display: grid; gap: 10px; }
+.mode { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 12px; align-items: start; padding: 14px; border-radius: 16px; border: 2px solid var(--ink); background: var(--surface); }
+.mode.sprint { border-color: var(--wax); }
+.mode .ic { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-family: var(--display); font-weight: 800; font-size: 1.15rem;
+  background: color-mix(in srgb, var(--kraft) 30%, var(--surface)); color: var(--ink); }
+.mode.sprint .ic { background: color-mix(in srgb, var(--wax) 18%, var(--surface)); }
+.mode h2 { font-family: var(--display); font-weight: 800; font-size: 1.2rem; margin: 0; display: flex; align-items: center; gap: 8px; }
+.badge { font-family: var(--body); font-size: .62rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; background: var(--wax); color: var(--wax-ink); border-radius: 4px; padding: 2px 6px; }
+.mode p { margin: 2px 0 10px; font-size: .85rem; line-height: 1.35; color: var(--muted); }
+.mode .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.b-mode { display: flex; align-items: center; justify-content: center; width: 100%; min-height: 44px; border-radius: 12px; font-family: var(--display); font-weight: 800; font-size: 1rem; text-decoration: none; }
+.b-mode:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+a.b-mode.b-race { background: var(--wax); color: var(--wax-ink); }
+.title-note { font-size: .8rem; color: var(--muted); text-align: center; margin: 0; }
 .sprint-link { display: block; text-align: center; color: var(--ink); font-weight: 700; font-size: .95rem; }
 
 @media (prefers-reduced-motion: reduce) { .name.pop { animation: none; } button, .dot { transition: none; } }
@@ -204,10 +231,9 @@ footer { text-align: center; font-size: .72rem; color: var(--muted); line-height
 
 <div class="app">
   <header>
-    <div class="logo"><span class="s">Skier</span> or <span class="i">IKEA-r</span>?</div>
+    <a class="logo" href="#" id="logo" aria-label="Skier or IKEA-r? title screen"><span class="s">Skier</span> or <span class="i">IKEA-r</span>?</a>
     <div class="hright">
       <div class="dots" id="dots" aria-label="Progress"></div>
-      <a class="mode-link" href="sprint.html">Sprint</a>
     </div>
   </header>
   <main id="main"></main>
@@ -286,7 +312,50 @@ function pickRound(rnd) {
   ], rnd);
 }
 
+let onTitle = false;
+function renderTitle() {
+  onTitle = true;
+  $dots.hidden = true;
+  $main.innerHTML = `
+    <section class="title-screen">
+      <p class="kicker">A game for skiers and flat-pack survivors</p>
+      <h1 class="big-title"><span class="s">Skier</span> or <span class="i">IKEA-r</span>?</h1>
+      <div class="premise">
+        <p class="q">Think you know Nordic skiing?</p>
+        <p class="q">Built one BILLY too many?</p>
+        <p>Every name is either a World Cup cross-country racer or something you assemble with an Allen key. Can you tell which?</p>
+        <div class="pair"><span class="sk">KALLA · skier</span><span class="ik">KALLAX · shelf</span></div>
+      </div>
+      <p class="kicker">Pick your event</p>
+      <div class="modes">
+        <div class="mode">
+          <div class="ic" aria-hidden="true">7</div>
+          <div>
+            <h2>Classic</h2>
+            <p>7 names, no clock. See what each one really is.</p>
+            <button class="b-next b-mode" id="btn-classic">Play classic</button>
+          </div>
+        </div>
+        <div class="mode sprint">
+          <div class="ic" aria-hidden="true">⏱</div>
+          <div>
+            <h2>Sprint <span class="badge">Race mode</span></h2>
+            <p>Race the World Cup field against the clock. Qualify, survive the heats, chase the crystal globe.</p>
+            <div class="row2">
+              <a class="b-mode b-race" href="sprint.html#start-m">Men's</a>
+              <a class="b-mode b-race" href="sprint.html#start-w">Women's</a>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="title-note">Got a challenge link? It skips this screen.</p>
+    </section>`;
+  document.getElementById("btn-classic").addEventListener("click", () => newGame());
+}
+
 function newGame(seed = newSeed(), challenge = false) {
+  onTitle = false;
+  $dots.hidden = false;
   game = { seed, challenge, qs: pickRound(seededRandom(seed)), i: 0, answers: [] };
   renderQuestion();
 }
@@ -403,8 +472,9 @@ function renderEnd() {
       <button class="b-ghost" id="btn-copy">Challenge a friend</button>
     </div>
     <p class="toast" id="toast"></p>
-    <a class="sprint-link" href="sprint.html">Try Sprint mode: race the World Cup field →</a>`;
+    <a class="sprint-link" href="#" id="change-mode">Change mode</a>`;
   document.getElementById("btn-again").addEventListener("click", () => { clearHash(); newGame(); });
+  document.getElementById("change-mode").addEventListener("click", e => { e.preventDefault(); clearHash(); renderTitle(); window.scrollTo(0, 0); });
   document.getElementById("btn-copy").addEventListener("click", () => copyScore(score, rank));
   document.getElementById("btn-again").focus({ preventScroll: true });
 }
@@ -416,7 +486,7 @@ function copyScore(score, rank) {
 }
 
 document.addEventListener("keydown", e => {
-  if (!game) return;
+  if (!game || onTitle) return;
   const k = e.key.toLowerCase();
   if (game.answers.length === game.i && game.i < ROUNDS) {
     if (k === "s" || k === "arrowleft") answer("skier");
@@ -424,10 +494,11 @@ document.addEventListener("keydown", e => {
   }
 });
 
-{ // A challenge link (#game-12345) replays that game; otherwise start a fresh one.
+{ // A challenge link (#game-12345) replays that game; otherwise show the title screen.
   const m = location.hash.match(/^#game-(\d{5})$/);
-  m ? newGame(+m[1], true) : newGame();
+  m ? newGame(+m[1], true) : renderTitle();
 }
+document.getElementById("logo").addEventListener("click", e => { e.preventDefault(); clearHash(); renderTitle(); window.scrollTo(0, 0); });
 setupShare("");
 window.addEventListener("hashchange", () => location.reload());   // a challenge link opened in an open tab
 </script>
