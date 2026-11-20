@@ -30,6 +30,9 @@ HEAD
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 META
+    cat <<'GC'
+<script data-goatcounter="https://skier-or-ikear.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+GC
     cat <<'HEAD'
 <style>
 :root { color-scheme: light; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }

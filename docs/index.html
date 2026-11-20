@@ -12,6 +12,7 @@
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
+<script data-goatcounter="https://skier-or-ikear.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 <style>
 :root { color-scheme: light; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
 body { margin: 0; font: 14px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; }
@@ -484,6 +485,7 @@ function wreathSvg() {
 function renderEnd() {
   const score = game.answers.filter(Boolean).length;
   const rank = [...RANKS].reverse().find(([min]) => score >= min)[1];
+  track(`classic-finished-${score}of${ROUNDS}`);
   renderDots();
   $dots.setAttribute("aria-label", `Final score ${score} of ${ROUNDS}`);
   const rows = game.qs.map((q, k) => `
@@ -513,6 +515,7 @@ function renderEnd() {
 function copyScore(score, rank) {
   const grid = game.answers.map(a => a ? "🟩" : "🟥").join("");
   const text = `Skier or IKEA-r? Game #${game.seed}: ${score}/${ROUNDS} ${grid}\n${rank}${score === ROUNDS ? " 🌿 Laurel wreath!" : ""}\nSame 7 names. Can you beat me?`;
+  track("challenge-sent-classic");
   shareOrCopy(text, `${SHARE_URL}#game-${game.seed}`, document.getElementById("toast"), "Challenge copied. Paste it in the group chat.");
 }
 
@@ -527,6 +530,7 @@ document.addEventListener("keydown", e => {
 
 { // A challenge link (#game-12345) replays that game; otherwise show the title screen.
   const m = location.hash.match(/^#game-(\d{5})$/);
+  if (m) track("challenge-opened-classic");
   m ? newGame(+m[1], true) : renderTitle();
 }
 document.getElementById("logo").addEventListener("click", e => { e.preventDefault(); clearHash(); renderTitle(); window.scrollTo(0, 0); });

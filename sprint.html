@@ -869,8 +869,9 @@ function finishRace() {
     <p class="toast" id="toast"></p>
     <p class="small"><a href="index.html">Change mode</a></p>`;
   document.getElementById("btn-again").onclick = () => { clearHash(); newRace(R.gender); };
+  track(`sprint-finished-${R.gender === "M" ? "men" : "women"}-${yourPlace ? "final-" + yourPlace : "out-" + lastStep.key}`);
   document.getElementById("btn-copy").onclick = () =>
-    shareOrCopy(share, raceLink(), document.getElementById("toast"), "Challenge copied. Paste it in the group chat.");
+    (track("challenge-sent-sprint"), shareOrCopy(share, raceLink(), document.getElementById("toast"), "Challenge copied. Paste it in the group chat."));
 }
 
 document.addEventListener("keydown", e => {
@@ -885,7 +886,10 @@ document.addEventListener("keydown", e => {
   const go = location.hash.match(/^#start-([mw])$/);
   const m = location.hash.match(/^#race-([mw])-(\d{5})$/);
   if (go) { clearHash(); newRace(go[1].toUpperCase()); }
-  else start(m ? { gender: m[1].toUpperCase(), seed: +m[2] } : null);
+  else {
+    if (m) track("challenge-opened-sprint");
+    start(m ? { gender: m[1].toUpperCase(), seed: +m[2] } : null);
+  }
 }
 setupShare("sprint.html");
 window.addEventListener("hashchange", () => location.reload());   // a challenge link opened in an open tab

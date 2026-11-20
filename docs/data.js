@@ -331,6 +331,15 @@ function seededRandom(seed) {
   };
 }
 const newSeed = () => 10000 + Math.floor(Math.random() * 90000);   // five-digit game number
+// Counts an event in GoatCounter (only on the GitHub Pages copy, which loads count.js;
+// it ignores localhost). Retries for a few seconds in case count.js is still loading.
+function track(name, tries = 12) {
+  try {
+    if (window.goatcounter && window.goatcounter.count) window.goatcounter.count({ path: name, title: name, event: true });
+    else if (tries > 0) setTimeout(() => track(name, tries - 1), 500);
+  } catch (e) {}
+}
+
 function clearHash() { try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {} }
 
 // Phone share sheet where available, otherwise copy text + link and say so in toastEl.
@@ -353,5 +362,5 @@ function setupShare(page) {
   const text = page === "sprint.html"
     ? "Race the World Cup sprint field: is it a ski racer or an IKEA product? Fastest correct answers win."
     : "Is it a cross-country ski racer or an IKEA product? 7 names. How many can you get?";
-  btn.addEventListener("click", () => shareOrCopy(text, SHARE_URL + (page || ""), toast, "Link copied. Paste it to your friends."));
+  btn.addEventListener("click", () => (track("share-" + (page ? "sprint" : "classic")), shareOrCopy(text, SHARE_URL + (page || ""), toast, "Link copied. Paste it to your friends.")));
 }
