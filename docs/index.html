@@ -73,6 +73,12 @@ header { display: flex; align-items: center; justify-content: space-between; gap
 .logo .s { color: var(--wax); }
 .logo .i { color: var(--kraft); }
 .dots { display: flex; gap: 6px; }
+.hright { display: flex; align-items: center; gap: 10px; }
+.mode-link { font-size: .72rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; text-decoration: none;
+  color: var(--ink); border: 1.5px solid var(--ink); border-radius: 999px; padding: 4px 10px; white-space: nowrap; }
+.mode-link:hover, .mode-link:focus-visible { background: var(--ink); color: var(--bg); }
+.logo { white-space: nowrap; }
+@media (max-width: 360px) { .logo { font-size: 1rem; } .hright { gap: 6px; } .dots { gap: 3px; } .dot { width: 7px; height: 7px; } .mode-link { padding: 3px 7px; } }
 .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--line); transition: background .2s, transform .2s; }
 .dot.now { background: var(--ink); transform: scale(1.25); }
 .dot.ok { background: var(--good); }
@@ -188,7 +194,10 @@ footer { text-align: center; font-size: .72rem; color: var(--muted); line-height
 <div class="app">
   <header>
     <div class="logo"><span class="s">Skier</span> or <span class="i">IKEA-r</span>?</div>
-    <div class="dots" id="dots" aria-label="Progress"></div>
+    <div class="hright">
+      <div class="dots" id="dots" aria-label="Progress"></div>
+      <a class="mode-link" href="sprint.html">Sprint</a>
+    </div>
   </header>
   <main id="main"></main>
   <footer>Skiers from FIS Cross-Country World Cup fields and the FIS registers of active Swedish and Norwegian racers. Product names from the IKEA range and Lars Petrus's IKEA Dictionary. Just for fun; not affiliated with either.</footer>
