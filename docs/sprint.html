@@ -1,0 +1,728 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Is it a cross-country ski racer or an IKEA product? A quick phone game, with a sprint mode against the World Cup field.">
+<style>
+:root { color-scheme: light; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+body { margin: 0; font: 14px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; }
+img { max-width: 100%; }
+[hidden] { display: none !important; }
+</style>
+<title>Skier or IKEA-r? Sprint</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=Familjen+Grotesk:wght@400;600;700&display=swap">
+</head>
+<body>
+<style>
+/* Layout: one-screen phone race — live heat track up top, name in the middle, answer buttons in the thumb zone. */
+:root {
+  --bg: #eef3f6;          /* packed snow, faint blue */
+  --surface: #ffffff;
+  --ink: #15212b;
+  --muted: #5b6b78;
+  --line: #cfdae2;
+  --track: rgba(21,33,43,.06);
+  --wax: #d23a2a;         /* ski-wax red: skier */
+  --wax-ink: #ffffff;
+  --kraft: #c9975a;       /* flat-pack cardboard: IKEA-r */
+  --kraft-ink: #2a1d0c;
+  --good: #1f7a4f;
+  --bad: #b3261e;
+  --display: "Bricolage Grotesque", "Arial Black", system-ui, sans-serif;
+  --body: "Familjen Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e171f; --surface: #17232d; --ink: #e9f0f4; --muted: #93a4b1; --line: #2a3a47;
+    --track: rgba(233,240,244,.05); --wax: #f0604c; --wax-ink: #1a0a07; --kraft: #dcae73; --kraft-ink: #24180a;
+    --good: #4cc38a; --bad: #ff7a70; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e171f; --surface: #17232d; --ink: #e9f0f4; --muted: #93a4b1; --line: #2a3a47;
+  --track: rgba(233,240,244,.05); --wax: #f0604c; --wax-ink: #1a0a07; --kraft: #dcae73; --kraft-ink: #24180a;
+  --good: #4cc38a; --bad: #ff7a70; color-scheme: dark;
+}
+
+html, body { height: 100%; }
+body {
+  background:
+    repeating-linear-gradient(100deg, transparent 0 46px, var(--track) 46px 52px, transparent 52px 64px, var(--track) 64px 70px, transparent 70px 180px),
+    var(--bg);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 16px;
+  -webkit-tap-highlight-color: transparent;
+}
+.app {
+  box-sizing: border-box;
+  min-height: 100%;
+  max-width: 520px;
+  margin: 0 auto;
+  display: flex; flex-direction: column; gap: 16px;
+  padding-block: 14px 20px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.logo { font-family: var(--display); font-weight: 800; font-size: 1.15rem; letter-spacing: -.01em; line-height: 1; }
+.logo .s { color: var(--wax); }
+.logo .i { color: var(--kraft); }
+.dots { display: flex; gap: 6px; }
+.dot { width: 10px; height: 10px; border-radius: 50%; background: var(--line); transition: background .2s, transform .2s; }
+.dot.now { background: var(--ink); transform: scale(1.25); }
+.dot.ok { background: var(--good); }
+.dot.no { background: var(--bad); }
+
+main { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 16px; }
+.card {
+  flex: 1 1 auto; min-height: 260px; max-height: 520px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  box-shadow: 0 10px 30px -18px rgba(0,0,0,.35);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; gap: 14px; padding: 24px 18px;
+  position: relative; overflow: hidden;
+}
+.eyebrow { font-size: .75rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.name {
+  font-family: var(--display); font-weight: 800; line-height: .95; letter-spacing: -.02em;
+  overflow-wrap: anywhere; max-width: 100%;
+}
+.name.pop { animation: pop .35s cubic-bezier(.2,1.4,.4,1); }
+@keyframes pop { from { transform: scale(.85); opacity: .3 } to { transform: none; opacity: 1 } }
+.hint { color: var(--muted); max-width: 30ch; line-height: 1.4; margin: 0; text-wrap: balance; }
+
+/* Reveal: race bib for skiers, product tag for flat-pack */
+.reveal { display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%; }
+.verdict { font-family: var(--display); font-weight: 800; font-size: 1.5rem; }
+.verdict.ok { color: var(--good); }
+.verdict.no { color: var(--bad); }
+.bib {
+  background: #fff; color: #15212b; border: 3px solid var(--wax);
+  border-radius: 10px; padding: 12px 18px 14px; min-width: 220px; max-width: 100%; box-sizing: border-box;
+  position: relative;
+}
+.bib::before, .bib::after { content: ""; position: absolute; top: 8px; width: 8px; height: 8px; border-radius: 50%; border: 2px solid #b9c4cc; }
+.bib::before { left: 8px; } .bib::after { right: 8px; }
+.bib .num { font-family: var(--display); font-weight: 800; font-size: 2.6rem; line-height: 1; color: var(--wax); font-variant-numeric: tabular-nums; }
+.bib .who { font-weight: 700; font-size: 1.1rem; margin-top: 4px; }
+.bib .meta { font-size: .9rem; color: #4a5a66; margin-top: 2px; }
+.tag {
+  background: var(--kraft); color: var(--kraft-ink);
+  padding: 14px 22px 14px 34px; min-width: 220px; max-width: 100%; box-sizing: border-box;
+  text-align: left; position: relative;
+  clip-path: polygon(18px 0, 100% 0, 100% 100%, 18px 100%, 0 50%);
+  border-radius: 4px;
+}
+.tag::before { content: ""; position: absolute; left: 14px; top: 50%; width: 9px; height: 9px; margin-top: -4.5px; border-radius: 50%; background: var(--surface); }
+.tag .prod { font-family: var(--display); font-weight: 800; font-size: 1.6rem; line-height: 1; letter-spacing: .02em; }
+.tag .type { font-weight: 600; font-size: 1rem; margin-top: 4px; }
+.tag .meta { font-size: .8rem; opacity: .8; margin-top: 6px; letter-spacing: .06em; text-transform: uppercase; }
+/* Both: bib and price tag overlap, with a rubber stamp across them */
+.verdict.both { color: var(--ink); }
+.duo { position: relative; display: flex; align-items: center; justify-content: center; padding: 6px 0 46px; max-width: 100%; }
+.duo .bib, .duo .tag { min-width: 0; width: 150px; flex: 0 1 150px; }
+.duo .bib { transform: rotate(-5deg); z-index: 1; padding: 10px 12px 12px; }
+.duo .bib .num { font-size: 2rem; }
+.duo .bib .who { font-size: .95rem; }
+.duo .bib .meta { font-size: .75rem; }
+.duo .tag { transform: rotate(6deg) translateY(8px); margin-left: -6px; padding: 12px 14px 12px 30px; }
+.duo .tag .prod { font-size: 1.25rem; overflow-wrap: anywhere; }
+.duo .tag .type { font-size: .85rem; }
+.stamp {
+  position: absolute; left: 50%; bottom: 0; z-index: 2;
+  transform: translate(-50%, 0) rotate(-6deg);
+  font-family: var(--display); font-weight: 800; font-size: 1.6rem; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--good); border: 4px solid var(--good); border-radius: 10px; padding: 2px 14px;
+  background: color-mix(in srgb, var(--surface) 80%, transparent);
+  animation: stamp .35s cubic-bezier(.2,1.6,.4,1) both;
+}
+@keyframes stamp { from { transform: translate(-50%, 0) rotate(-6deg) scale(2.2); opacity: 0 } to { transform: translate(-50%, 0) rotate(-6deg) scale(1); opacity: 1 } }
+@media (prefers-reduced-motion: reduce) { .stamp { animation: none; } }
+.fact { color: var(--muted); font-size: .95rem; margin: 0; max-width: 32ch; line-height: 1.4; }
+
+.answers { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+button {
+  font-family: var(--display); font-weight: 800; font-size: 1.25rem;
+  border: 0; border-radius: 18px; min-height: 76px; padding: 10px 12px; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  transition: transform .08s ease, filter .15s;
+  touch-action: manipulation;
+}
+button small { font-family: var(--body); font-weight: 600; font-size: .78rem; opacity: .85; letter-spacing: .02em; }
+button:active { transform: scale(.97); }
+button:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+button:disabled { cursor: default; filter: saturate(.35) opacity(.55); }
+button.chosen:disabled { filter: none; box-shadow: 0 0 0 3px var(--bg), 0 0 0 6px var(--ink); }
+.b-skier { background: var(--wax); color: var(--wax-ink); }
+.b-ikea { background: var(--kraft); color: var(--kraft-ink); }
+.b-next { background: var(--ink); color: var(--bg); width: 100%; }
+.b-ghost { background: transparent; color: var(--ink); border: 2px solid var(--line); }
+
+/* End screen */
+.score { font-family: var(--display); font-weight: 800; font-size: clamp(4.5rem, 26vw, 7rem); line-height: .9; font-variant-numeric: tabular-nums; }
+.score span { color: var(--muted); font-size: .45em; }
+.rank { font-family: var(--display); font-weight: 800; font-size: 1.5rem; margin: 0; text-wrap: balance; }
+.recap { list-style: none; padding: 0; margin: 0; width: 100%; display: flex; flex-direction: column; gap: 6px; text-align: left; }
+.recap li { display: grid; grid-template-columns: 22px 1fr auto; gap: 10px; align-items: baseline; padding: 6px 4px; border-bottom: 1px solid var(--line); font-size: .95rem; }
+.recap li:last-child { border-bottom: 0; }
+.recap .mk { font-weight: 800; }
+.recap .mk.ok { color: var(--good); }
+.recap .mk.no { color: var(--bad); }
+.recap b { font-family: var(--display); letter-spacing: .01em; }
+.recap .what { color: var(--muted); font-size: .85rem; text-align: right; }
+.endrow { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.toast { min-height: 1.2em; text-align: center; color: var(--muted); font-size: .85rem; margin: 0; }
+footer { text-align: center; font-size: .72rem; color: var(--muted); line-height: 1.4; }
+
+@media (prefers-reduced-motion: reduce) { .name.pop { animation: none; } button, .dot { transition: none; } }
+
+/* ---------- Sprint mode ---------- */
+a { color: inherit; }
+.logo { text-decoration: none; }
+.chip { font-size: .72rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); border: 1.5px solid var(--line); border-radius: 999px; padding: 4px 10px; white-space: nowrap; }
+.card.top { justify-content: flex-start; max-height: none; flex: 0 1 auto; }
+.title { font-family: var(--display); font-weight: 800; font-size: clamp(2rem, 9vw, 2.8rem); line-height: .95; letter-spacing: -.02em; margin: 0; text-wrap: balance; }
+.title .s { color: var(--wax); } .title .i { color: var(--kraft); white-space: nowrap; }
+.format { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; text-align: left; max-width: 34ch; }
+.format li { display: grid; grid-template-columns: 34px 1fr; gap: 10px; align-items: start; line-height: 1.35; }
+.format b { font-family: var(--display); font-size: .8rem; letter-spacing: .04em; background: var(--ink); color: var(--bg); border-radius: 6px; text-align: center; padding: 3px 0; }
+.pick { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.b-pick { background: var(--surface); color: var(--ink); border: 2px solid var(--ink); }
+.small { font-size: .85rem; color: var(--muted); text-align: center; }
+.small a { color: var(--ink); font-weight: 600; }
+
+/* Heat line-up and live track */
+.track { width: 100%; display: flex; flex-direction: column; gap: 7px; }
+.lane { display: grid; grid-template-columns: 26px minmax(0, 5.6rem) 1fr 3.2rem; gap: 8px; align-items: center; font-size: .85rem; }
+.lane .bibno { font-family: var(--display); font-weight: 800; font-size: .75rem; text-align: center; border: 1.5px solid var(--line); border-radius: 5px; padding: 1px 0; font-variant-numeric: tabular-nums; }
+.lane .who { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
+.lane .who small { color: var(--muted); font-weight: 400; margin-left: 3px; }
+.lane .rail { position: relative; height: 6px; border-radius: 3px; background: var(--line); }
+.lane .rail::after { content: ""; position: absolute; right: 0; top: -5px; bottom: -5px; width: 2px; background: var(--ink); opacity: .5; }
+.lane .runner { position: absolute; top: 50%; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; background: var(--muted); }
+.lane .t { text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); font-size: .8rem; }
+.lane.you .who { color: var(--wax); }
+.lane.you .runner { background: var(--wax); box-shadow: 0 0 0 3px color-mix(in srgb, var(--wax) 30%, transparent); }
+.lane.you .bibno { border-color: var(--wax); color: var(--wax); }
+.lane.done .t { color: var(--ink); font-weight: 600; }
+
+.racebar { display: flex; justify-content: space-between; align-items: baseline; width: 100%; }
+.clock { font-family: var(--display); font-weight: 800; font-size: 1.6rem; font-variant-numeric: tabular-nums; }
+.clock small { font-size: .55em; color: var(--muted); }
+.count { font-size: .8rem; color: var(--muted); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
+.card.race { max-height: none; flex: 1 1 auto; gap: 12px; padding: 16px; }
+.namebox { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 150px; border-radius: 14px; transition: background .15s; }
+.namebox.ok { background: color-mix(in srgb, var(--good) 14%, transparent); }
+.namebox.no { background: color-mix(in srgb, var(--bad) 14%, transparent); }
+.flash { min-height: 1.3em; font-weight: 700; font-size: .95rem; }
+.flash.ok { color: var(--good); } .flash.no { color: var(--bad); }
+.penalty { color: var(--bad); font-weight: 800; }
+.big { font-family: var(--display); font-weight: 800; font-size: 5rem; line-height: 1; }
+
+/* Results */
+.results { width: 100%; border-collapse: collapse; font-size: .9rem; }
+.results td { padding: 6px 4px; border-bottom: 1px solid var(--line); text-align: left; }
+.results tr:last-child td { border-bottom: 0; }
+.results .pl { font-family: var(--display); font-weight: 800; width: 1.6rem; }
+.results .tm { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.results .tm small { color: var(--muted); margin-left: 4px; }
+.results .st { width: 2.4rem; text-align: right; }
+.results tr.you td { background: color-mix(in srgb, var(--wax) 12%, transparent); font-weight: 700; }
+.results tr.cut td { border-bottom: 2px dashed var(--muted); }
+.results .gap td { text-align: center; color: var(--muted); padding: 2px; border-bottom: 0; }
+.tagq { font-size: .7rem; font-weight: 800; letter-spacing: .06em; border-radius: 4px; padding: 2px 5px; background: var(--good); color: var(--surface); }
+.tagq.ll { background: var(--kraft); color: var(--kraft-ink); }
+.waiting { width: 100%; display: flex; flex-direction: column; gap: 6px; font-size: .9rem; }
+.waiting .row { display: flex; justify-content: space-between; gap: 8px; padding: 6px 8px; border-radius: 8px; background: color-mix(in srgb, var(--line) 45%, transparent); animation: pop .3s ease both; }
+.waiting .row.ll { outline: 2px solid var(--kraft); }
+.waiting .row span:last-child { font-variant-numeric: tabular-nums; }
+.verdict-box { position: relative; min-height: 64px; width: 100%; display: flex; align-items: center; justify-content: center; }
+.stamp.static { position: static; transform: rotate(-6deg); animation: stamp2 .35s cubic-bezier(.2,1.6,.4,1) both; }
+.stamp.out { color: var(--bad); border-color: var(--bad); }
+.stamp.ll { color: var(--kraft-ink); border-color: var(--kraft); background: color-mix(in srgb, var(--kraft) 35%, var(--surface)); }
+@keyframes stamp2 { from { transform: rotate(-6deg) scale(2.2); opacity: 0 } to { transform: rotate(-6deg) scale(1); opacity: 1 } }
+details.names { width: 100%; text-align: left; font-size: .9rem; }
+details.names summary { cursor: pointer; color: var(--muted); font-weight: 600; }
+
+/* Journey */
+.path { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; align-items: center; }
+.path .step { border: 1.5px solid var(--line); border-radius: 8px; padding: 5px 8px; font-size: .8rem; text-align: center; line-height: 1.2; }
+.path .step b { display: block; font-family: var(--display); font-size: .95rem; }
+.path .step.ll { border-color: var(--kraft); }
+.path .step.out { border-color: var(--bad); }
+.path .arrow { color: var(--muted); }
+.podium { width: 100%; font-size: .9rem; color: var(--muted); }
+.podium b { color: var(--ink); }
+@media (prefers-reduced-motion: reduce) { .stamp.static, .waiting .row { animation: none; } }
+</style>
+
+<div class="app">
+  <header>
+    <a class="logo" href="index.html"><span class="s">Skier</span> or <span class="i">IKEA-r</span>?</a>
+    <div class="chip" id="chip">Sprint</div>
+  </header>
+  <main id="main"></main>
+  <footer>Opponents and rankings from the FIS Cross-Country World Cup 2025/26 sprint standings; their race times are simulated. Skier names also from the FIS registers of active Swedish and Norwegian racers. Product names from the IKEA range and Lars Petrus's IKEA Dictionary. Just for fun; not affiliated with FIS or IKEA.</footer>
+</div>
+
+<script src="data.js"></script>
+<script>
+// ---------- Settings ----------
+const PENALTY = 3;          // seconds added for a wrong answer
+const BASE = 2.7;           // seconds per name scale; tuned by simulating thousands of races
+const FIELD = 60;           // starters in qualification (you + 59)
+const STAGES = [
+  { key: "Q",  label: "Qualification", short: "Q",  n: 8, diff: [1, 1, 2] },
+  { key: "QF", label: "Quarterfinal",  short: "QF", n: 5, diff: [1, 2, 2] },
+  { key: "SF", label: "Semifinal",     short: "SF", n: 5, diff: [2, 2, 3] },
+  { key: "F",  label: "Final",         short: "F",  n: 5, diff: [2, 3, 3] },
+];
+// FIS quarterfinal seeding by qualification rank.
+const QF_SEED = [[1,10,11,20,21,30],[4,7,14,17,24,27],[5,6,15,16,25,26],[2,9,12,19,22,29],[3,8,13,18,23,28]];
+
+const ord = n => { const s = ["th","st","nd","rd"], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); };
+
+// ---------- Name pool with difficulty ----------
+const pool = buildClassicPool();
+{
+  const byName = new Map(pool.map(q => [q.n, q]));
+  const best = s => Math.min(s[4] ?? 999, s[5] ?? 999);
+  [...WC_STANDINGS].sort((a, b) => best(a) - best(b)).forEach(s => {
+    const [n, first, c, g, sp, ov] = s;
+    const parts = [sp && `sprint ${ord(sp)}`, ov && `overall ${ord(ov)}`].filter(Boolean).join(", ");
+    const fact = `World Cup 2025/26: ${parts}.`;
+    const q = byName.get(n);
+    if (q && q.kind === "skier") {
+      if (q.rank) return;                      // a better-ranked namesake already claimed it
+      Object.assign(q, { tier: "wc", full: `${first} ${titleCase(n)}`, c, rank: best(s), fact });
+    } else if (q && q.kind === "ikea") {       // a World Cup skier who is also an IKEA name
+      Object.assign(q, { kind: "skier", tier: "wc", full: `${first} ${titleCase(n)}`, c, rank: best(s),
+        both: { type: q.type, fact: q.fact }, fact });
+    } else {
+      const nq = { kind: "skier", tier: "wc", n, full: `${first} ${titleCase(n)}`, c, rank: best(s), fact };
+      pool.push(nq); byName.set(n, nq);
+    }
+  });
+  pool.forEach(q => {
+    let d;
+    if (q.kind === "skier") {
+      if (q.both) d = 3;
+      else if (q.rank) d = q.rank <= 30 ? 1 : 2;
+      else d = q.tier === "wc" ? 1 : 3;
+      if (!q.both && /[ØÆÜÉČŠŽŘÝÁÍĆŅ]/.test(q.n)) d = Math.max(1, d - 1);   // letters IKEA never uses
+    } else {
+      d = q.type === "IKEA product name" ? 3 : q.type === "Product series" ? 2 : 1;
+      if (q.fact === `Swedish for "${q.n.toLowerCase()}".`) d = 1;            // ALARM, DATA, CHARM...
+    }
+    q.d = d;
+  });
+}
+const byKD = { skier: { 1: [], 2: [], 3: [] }, ikea: { 1: [], 2: [], 3: [] } };
+pool.forEach(q => { if (!q.both) byKD[q.kind][q.d].push(q); });
+const bothNames = pool.filter(q => q.both);
+
+// ---------- Helpers ----------
+const $main = document.getElementById("main");
+const $chip = document.getElementById("chip");
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const pickOne = a => a[Math.floor(Math.random() * a.length)];
+const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const randn = () => { let u = 0, v = 0; while (!u) u = Math.random(); while (!v) v = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
+const fmt = t => t.toFixed(1);
+const flag = c => (COUNTRY[c] || ["", ""])[1];
+const nameSize = n => { const len = [...n].length; return `min(${Math.min(4.6, 26 / len).toFixed(2)}rem, ${(115 / len).toFixed(1)}vw)`; };
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+// ---------- Race simulation ----------
+function botTime(skill, names) {
+  let t = 0;
+  for (const q of names) {
+    t += BASE * (0.76 + 0.5 * skill) * Math.exp(randn() * 0.25 - 0.03);
+    const acc = 0.95 - 0.18 * skill - 0.07 * (q.d - 1);
+    if (Math.random() > acc) t += PENALTY;
+  }
+  return t;
+}
+
+function buildField(gender) {
+  const ranked = WC_STANDINGS.filter(s => s[3] === gender && s[4]).sort((a, b) => a[4] - b[4]).slice(0, FIELD - 1);
+  const bots = ranked.map((s, i) => ({ name: titleCase(s[0]), first: s[1], nat: s[2], sp: s[4], skill: i / (ranked.length - 1) }));
+  return [{ you: true, name: "You", nat: "" }, ...bots];
+}
+
+function pickNames(stage) {
+  const out = [];
+  if (stage.key === "F" && Math.random() < 0.3) {
+    const b = bothNames.filter(q => !R.used.has(q.n));
+    if (b.length) { const q = pickOne(b); R.used.add(q.n); out.push(q); }
+  }
+  const nSki = Math.random() < .5 ? Math.floor(stage.n / 2) : Math.ceil(stage.n / 2);
+  const kinds = shuffle([...Array(stage.n - out.length)].map((_, i) => i < nSki - out.length ? "skier" : "ikea"));
+  for (const kind of kinds) {
+    const d = pickOne(stage.diff);
+    let c = byKD[kind][d].filter(q => !R.used.has(q.n));
+    if (!c.length) c = pool.filter(q => q.kind === kind && !q.both && !R.used.has(q.n));
+    const q = pickOne(c); R.used.add(q.n); out.push(q);
+  }
+  return shuffle(out);
+}
+
+// Heats for a stage, from the previous stage's results.
+function heatsFor(key) {
+  if (key === "Q") return [R.field];
+  if (key === "QF") return QF_SEED.map(h => h.map(r => R.qual[r - 1]));
+  if (key === "SF") return R.semis;
+  return [R.finalists];
+}
+
+// Top N of each heat go through, then the fastest of the rest as lucky losers.
+function advance(results, nTop, nLL) {
+  const q = [], rest = [];
+  results.forEach((h, hi) => h.forEach((x, pi) => (pi < nTop ? q : rest).push({ ...x, heat: hi, place: pi + 1 })));
+  rest.sort((a, b) => a.time - b.time);
+  return { q, ll: rest.slice(0, nLL) };
+}
+
+function runStage(key, names, youTime) {
+  const results = heatsFor(key).map(h =>
+    h.map(e => ({ e, time: e.you ? youTime : botTime(e.skill, names) })).sort((a, b) => a.time - b.time));
+  if (key === "Q") {
+    const all = results[0];
+    R.qual = all.slice(0, 30).map(x => x.e);
+    R.qual.forEach((e, i) => e.qr = i + 1);
+  } else if (key === "QF") {
+    const { q, ll } = advance(results, 2, 2);
+    const at = (h, p) => q.find(x => x.heat === h && x.place === p).e;
+    R.semis = [[at(0,1), at(0,2), at(1,1), at(1,2), at(2,1), ll[0].e], [at(2,2), at(3,1), at(3,2), at(4,1), at(4,2), ll[1].e]];
+    R.adv = { q, ll };
+  } else if (key === "SF") {
+    const { q, ll } = advance(results, 2, 2);
+    R.finalists = [...q.map(x => x.e), ...ll.map(x => x.e)];
+    R.adv = { q, ll };
+  } else {
+    R.finalResult = results[0];
+  }
+  return results;
+}
+
+// ---------- Race state ----------
+let R = null;
+
+function newRace(gender) {
+  R = { gender, field: buildField(gender), used: new Set(), stage: 0, path: [], out: false };
+  intro();
+}
+
+function stage() { return STAGES[R.stage]; }
+
+function yourHeat(key) {
+  const heats = heatsFor(key);
+  const i = heats.findIndex(h => h.some(e => e.you));
+  return { i, heat: heats[i] };
+}
+
+// ---------- Screens ----------
+function start() {
+  $chip.textContent = "Sprint";
+  $main.innerHTML = `
+    <section class="card top" style="gap:18px">
+      <div class="eyebrow">Sprint mode</div>
+      <h1 class="title"><span class="s">Skier</span> or <span class="i">IKEA-r</span>? Sprint</h1>
+      <ul class="format">
+        <li><b>Q</b><span>Qualification: 8 names against the clock. Top 30 of 60 go through.</span></li>
+        <li><b>QF</b><span>Quarterfinal: 5 names, 6 racers. Top 2 go through, plus 2 lucky losers on time.</span></li>
+        <li><b>SF</b><span>Semifinal: same again, with harder names.</span></li>
+        <li><b>F</b><span>Final: 5 names, 6 racers, one champion.</span></li>
+      </ul>
+      <p class="small">Answer fast. A wrong answer adds <b class="penalty">+${PENALTY} s</b>. Your rivals are the 2025/26 World Cup sprint field.</p>
+    </section>
+    <div class="pick">
+      <button class="b-pick" id="btn-men">Men's sprint</button>
+      <button class="b-pick" id="btn-women">Women's sprint</button>
+    </div>
+    <p class="small">Prefer a relaxed game? <a href="index.html">Play the classic 7 questions</a>.</p>`;
+  document.getElementById("btn-men").onclick = () => newRace("M");
+  document.getElementById("btn-women").onclick = () => newRace("W");
+}
+
+function laneHtml(e, i) {
+  const bib = e.you ? (e.qr ?? "") : (e.qr ?? e.sp);
+  return `<div class="lane${e.you ? " you" : ""}" data-i="${i}">
+    <span class="bibno">${bib}</span>
+    <span class="who">${esc(e.name)}<small>${e.you ? "" : flag(e.nat) || esc(e.nat)}</small></span>
+    <span class="rail"><span class="runner" style="left:0%"></span></span>
+    <span class="t"></span></div>`;
+}
+
+function intro() {
+  const st = stage();
+  $chip.textContent = `${R.gender === "M" ? "Men" : "Women"} · ${st.short}`;
+  let body;
+  if (st.key === "Q") {
+    const top = R.field.slice(1, 6).map(e => `${esc(e.name)} ${flag(e.nat)}`).join(", ");
+    body = `<div class="eyebrow">Qualification · time trial</div>
+      <div class="title">8 names. Beat the clock.</div>
+      <p class="small">60 starters, top 30 go through to the quarterfinals. Favourites: ${top}.</p>`;
+  } else {
+    const { i, heat } = yourHeat(st.key);
+    const label = st.key === "F" ? "Final" : `${st.label} ${i + 1}`;
+    body = `<div class="eyebrow">${label}</div>
+      <div class="title">${st.key === "F" ? "The final." : "Your heat"}</div>
+      <div class="track">${heat.map(laneHtml).join("")}</div>
+      <p class="small">${st.key === "F" ? "Six racers. Fastest wins." : "Top 2 go through. The 2 fastest of the rest go through as lucky losers."}</p>`;
+  }
+  $main.innerHTML = `<section class="card top" style="gap:16px">${body}</section>
+    <button class="b-next" id="btn-go">Start ${st.key === "Q" ? "qualification" : st.key === "F" ? "final" : "heat"}</button>`;
+  document.getElementById("btn-go").onclick = countdown;
+}
+
+async function countdown() {
+  const st = stage();
+  R.names = pickNames(st);
+  const heat = st.key === "Q" ? null : yourHeat(st.key).heat;
+  // Rivals' times for your heat are decided now so the track can show them racing.
+  R.live = heat ? heat.map(e => ({ e, time: e.you ? null : botTime(e.skill, R.names) })) : null;
+  $main.innerHTML = `<section class="card race">
+      ${heat ? `<div class="track" id="track">${heat.map(laneHtml).join("")}</div>` : ""}
+      <div class="namebox"><div class="big" id="cd">3</div></div>
+    </section>`;
+  const cd = document.getElementById("cd");
+  for (const s of ["3", "2", "1", "Go!"]) { cd.textContent = s; await sleep(550); }
+  race();
+}
+
+function race() {
+  const st = stage();
+  const heat = R.live;
+  $main.innerHTML = `<section class="card race">
+      ${heat ? `<div class="track" id="track">${heat.map((x, i) => laneHtml(x.e, i)).join("")}</div>` : ""}
+      <div class="racebar"><span class="count" id="count">Name 1 of ${st.n}</span><span class="clock" id="clock">0.0<small> s</small></span></div>
+      <div class="namebox" id="namebox"><div class="name" id="name"></div><div class="flash" id="flash"></div></div>
+    </section>
+    <div class="answers">
+      <button class="b-skier" id="btn-skier" data-k="skier">Skier<small>on snow</small></button>
+      <button class="b-ikea" id="btn-ikea" data-k="ikea">IKEA-r<small>in a flat box</small></button>
+    </div>`;
+  const S = R.run = { i: 0, banked: 0, qStart: 0, active: false, answers: [], done: false };
+  const $clock = document.getElementById("clock"), $count = document.getElementById("count");
+  const $name = document.getElementById("name"), $flash = document.getElementById("flash"), $box = document.getElementById("namebox");
+  const runners = heat ? [...document.querySelectorAll("#track .lane")] : [];
+  const clock = () => S.banked + (S.active ? (performance.now() - S.qStart) / 1000 : 0);
+
+  const draw = () => {
+    const t = S.ff ?? clock();
+    $clock.innerHTML = `${fmt(t)}<small> s</small>`;
+    runners.forEach((lane, i) => {
+      const x = heat[i];
+      const p = x.e.you ? (S.done ? 1 : S.i / st.n) : Math.min(1, t / x.time);
+      lane.querySelector(".runner").style.left = (p * 100).toFixed(1) + "%";
+      const fin = x.e.you ? (S.done ? S.banked : null) : (t >= x.time ? x.time : null);
+      if (fin != null && !lane.classList.contains("done")) { lane.classList.add("done"); lane.querySelector(".t").textContent = fmt(fin); }
+    });
+    if (!S.finished) requestAnimationFrame(draw);
+  };
+
+  const show = () => {
+    const q = R.names[S.i];
+    $count.textContent = `Name ${S.i + 1} of ${st.n}`;
+    $name.textContent = q.n; $name.style.fontSize = nameSize(q.n);
+    $name.classList.remove("pop"); void $name.offsetWidth; $name.classList.add("pop");
+    $flash.textContent = ""; $flash.className = "flash"; $box.className = "namebox";
+    S.qStart = performance.now(); S.active = true;
+  };
+
+  const answer = kind => {
+    if (!S.active || S.done) return;
+    const q = R.names[S.i];
+    S.banked += (performance.now() - S.qStart) / 1000; S.active = false;
+    const ok = q.both ? true : kind === q.kind;
+    if (!ok) S.banked += PENALTY;
+    S.answers.push(ok);
+    const what = q.both ? "Both! Skier and IKEA" : q.kind === "skier" ? `Skier · ${flag(q.c)} ${q.c}` : `IKEA · ${q.type}`;
+    $flash.innerHTML = ok ? `✓ ${esc(what)}` : `✗ ${esc(what)} · <span class="penalty">+${PENALTY} s</span>`;
+    $flash.className = "flash " + (ok ? "ok" : "no"); $box.className = "namebox " + (ok ? "ok" : "no");
+    S.i++;
+    if (S.i >= st.n) { S.done = true; setTimeout(finish, 650); }
+    else setTimeout(show, ok ? 380 : 650);
+  };
+  R.answer = answer;
+  document.querySelectorAll(".answers button").forEach(b => b.onclick = () => answer(b.dataset.k));
+
+  const finish = async () => {
+    document.querySelectorAll(".answers button").forEach(b => b.disabled = true);
+    const you = S.banked;
+    if (heat) {                                // let the rest of the heat cross the line
+      const last = Math.max(you, ...heat.filter(x => !x.e.you).map(x => x.time));
+      const from = you, t0 = performance.now(), dur = Math.min(1600, Math.max(300, (last - from) * 350));
+      await new Promise(res => {
+        const step = () => { const k = Math.min(1, (performance.now() - t0) / dur); S.ff = from + (last - from) * k; if (k < 1) requestAnimationFrame(step); else res(); };
+        requestAnimationFrame(step);
+      });
+    }
+    S.finished = true;
+    results(you);
+  };
+  show(); draw();
+}
+
+function resultsTable(rows, { nTop = 2, llSet = new Set(), cut = null, ellipsis = false } = {}) {
+  const lead = rows[0].time;
+  return `<table class="results"><tbody>${rows.map((x, i) => {
+    if (x === "gap") return `<tr class="gap"><td colspan="4">⋯</td></tr>`;
+    const status = i < nTop && !cut ? `<span class="tagq">Q</span>` : llSet.has(x.e) ? `<span class="tagq ll">LL</span>` : "";
+    return `<tr class="${x.e.you ? "you" : ""}${cut && x.place === cut ? " cut" : ""}">
+      <td class="pl">${x.place ?? i + 1}</td>
+      <td>${esc(x.e.name)} ${x.e.you ? "" : flag(x.e.nat)}</td>
+      <td class="tm">${fmt(x.time)}${x.time > lead ? `<small>+${fmt(x.time - lead)}</small>` : ""}</td>
+      <td class="st">${status}</td></tr>`;
+  }).join("")}</tbody></table>`;
+}
+
+function namesRecap() {
+  const items = R.names.map((q, i) => {
+    const ok = R.run.answers[i];
+    const what = q.both ? "Skier + IKEA" : q.kind === "skier" ? `${q.full} · ${q.c}` : q.type;
+    return `<li><span class="mk ${ok ? "ok" : "no"}">${ok ? "✓" : "✗"}</span><b>${esc(q.n)}</b><span class="what">${esc(what)}</span></li>`;
+  }).join("");
+  return `<details class="names"><summary>The names this round</summary><ul class="recap" style="margin-top:8px">${items}</ul></details>`;
+}
+
+async function results(you) {
+  const st = stage();
+  const all = runStage(st.key, R.names, you);
+  let html, outcome;                            // outcome: "Q" | "LL" | "out" | place number (final)
+
+  if (st.key === "Q") {
+    const rows = all[0].map((x, i) => ({ ...x, place: i + 1 }));
+    const me = rows.find(x => x.e.you);
+    // Show the top 3, your neighbours, and the cut line; "⋯" marks skipped places.
+    const places = [...new Set([1, 2, 3, me.place - 1, me.place, me.place + 1, 30, 31])]
+      .filter(p => p >= 1 && p <= rows.length).sort((a, b) => a - b);
+    const show = [];
+    places.forEach((p, k) => { if (k && p !== places[k - 1] + 1) show.push("gap"); show.push(rows[p - 1]); });
+    outcome = me.place <= 30 ? "Q" : "out";
+    R.path.push({ key: "Q", txt: ord(me.place), cls: outcome === "out" ? "out" : "" });
+    const head = outcome === "Q"
+      ? `<div class="verdict ok">Qualified ${ord(me.place)}</div>`
+      : `<div class="verdict no">${ord(me.place)}. Missed by ${fmt(me.time - rows[29].time)} s</div>`;
+    html = `${head}${resultsTable(show, { nTop: 0, cut: 30 })}<p class="small">Dashed line: the cut for the quarterfinals (top 30).</p>`;
+  } else {
+    const { i } = yourHeat(st.key);
+    const heat = all[i].map((x, k) => ({ ...x, place: k + 1 }));
+    const me = heat.find(x => x.e.you);
+    const label = st.key === "F" ? "Final" : `${st.label} ${i + 1}`;
+    if (st.key === "F") {
+      outcome = me.place;
+      R.path.push({ key: "F", txt: ord(me.place), cls: "" });
+      const head = me.place === 1 ? `<div class="verdict ok">World Cup sprint champion!</div>`
+        : `<div class="verdict ${me.place <= 3 ? "ok" : "both"}">${ord(me.place)} in the final${me.place <= 3 ? ". Podium!" : ""}</div>`;
+      html = `<div class="eyebrow">${label}</div>${head}${resultsTable(heat, { nTop: 0 })}`;
+    } else {
+      const llSet = new Set(R.adv.ll.map(x => x.e));
+      const top2 = me.place <= 2;
+      const isLL = llSet.has(me.e);
+      outcome = top2 ? "Q" : isLL ? "LL" : "out";
+      R.path.push({ key: st.key, txt: top2 ? ord(me.place) : isLL ? "LL" : ord(me.place), cls: isLL ? "ll" : outcome === "out" ? "out" : "" });
+      const tableNow = resultsTable(heat, { llSet: new Set() });
+      html = `<div class="eyebrow">${label}</div>
+        <div class="verdict ${top2 ? "ok" : "both"}">${top2 ? `${ord(me.place)}. Through!` : `${ord(me.place)} in your heat`}</div>
+        ${tableNow}
+        <div class="waiting" id="waiting"></div>
+        <div class="verdict-box" id="vbox"></div>`;
+      if (!top2) R.suspense = { heatIndex: i, all, me, isLL, label: st.label };
+    }
+  }
+
+  const last = st.key === "F" || outcome === "out";
+  $main.innerHTML = `<section class="card top" style="gap:12px">${html}${namesRecap()}</section>
+    <button class="b-next" id="btn-next" ${R.suspense ? "disabled" : ""}>${last ? "See results" : `Next: ${STAGES[R.stage + 1].label}`}</button>`;
+  const next = document.getElementById("btn-next");
+  next.onclick = () => {
+    if (last) { R.out = outcome === "out"; finishRace(); }
+    else { R.stage++; intro(); }
+  };
+
+  if (R.suspense) {                             // lucky-loser reveal
+    const { heatIndex, all: heats, me, isLL, label } = R.suspense;
+    R.suspense = null;
+    const $w = document.getElementById("waiting"), $v = document.getElementById("vbox");
+    $w.innerHTML = `<div class="small">Waiting for the other heats…</div>`;
+    await sleep(700);
+    const llSet = new Set(R.adv.ll.map(x => x.e));
+    const candidates = [];
+    heats.forEach((h, hi) => h.slice(2).forEach((x, k) => candidates.push({ ...x, hi, place: k + 3 })));
+    candidates.sort((a, b) => a.time - b.time);
+    const shown = candidates.slice(0, Math.max(4, candidates.findIndex(x => x.e.you) + 1));
+    $w.innerHTML = `<div class="small">Fastest non-qualifiers. Two spots.</div>`;
+    for (const x of shown) {
+      await sleep(450);
+      const row = document.createElement("div");
+      row.className = "row" + (llSet.has(x.e) ? " ll" : "");
+      row.innerHTML = `<span>${x.e.you ? "<b>You</b>" : esc(x.e.name) + " " + flag(x.e.nat)} · ${label} ${x.hi + 1}, ${ord(x.place)}</span><span>${fmt(x.time)}</span>`;
+      $w.appendChild(row);
+    }
+    await sleep(500);
+    $v.innerHTML = isLL ? `<div class="stamp static ll">Lucky loser!</div>`
+      : `<div class="stamp static out">Out</div>`;
+    if (!isLL) {
+      const lastLL = R.adv.ll[R.adv.ll.length - 1];
+      $w.insertAdjacentHTML("beforeend", `<div class="small">${fmt(me.time - lastLL.time)} s from a lucky loser spot.</div>`);
+    }
+    next.disabled = false; next.focus({ preventScroll: true });
+  }
+}
+
+function finishRace() {
+  // If you went out, run the rest of the event without you to crown a champion.
+  while (!R.finalResult) {
+    R.stage++;
+    const st = stage();
+    runStage(st.key, pickNames(st), null);
+  }
+  const podium = R.finalResult.slice(0, 3);
+  const yourPlace = R.finalResult.findIndex(x => x.e.you) + 1;   // 0 if you weren't in the final
+  const lastStep = R.path[R.path.length - 1];
+  const headline = yourPlace === 1 ? "Champion!" : yourPlace ? `${ord(yourPlace)} in the final`
+    : lastStep.key === "Q" ? "Out in qualification" : `Out in the ${STAGES.find(s => s.key === lastStep.key).label.toLowerCase()}`;
+  const pathHtml = R.path.map((p, i) => `${i ? `<span class="arrow">→</span>` : ""}<span class="step ${p.cls}"><b>${p.key}</b>${p.txt}</span>`).join("");
+  const podiumTxt = podium.map((x, i) => `${["🥇","🥈","🥉"][i]} <b>${esc(x.e.you ? "You" : x.e.name)}</b> ${x.e.you ? "" : flag(x.e.nat)}`).join("&nbsp;&nbsp;");
+  const share = `Skier or IKEA-r? Sprint 🏁 ${R.gender === "M" ? "Men" : "Women"}\n` + R.path.map(p => `${p.key} ${p.txt}`).join(" → ");
+  $chip.textContent = "Sprint";
+  $main.innerHTML = `<section class="card" style="gap:16px">
+      <div class="eyebrow">${R.gender === "M" ? "Men's" : "Women's"} sprint</div>
+      <div class="title">${esc(headline)}</div>
+      <div class="path">${pathHtml}</div>
+      <p class="podium">Podium: ${podiumTxt}</p>
+    </section>
+    <div class="endrow">
+      <button class="b-next" id="btn-again">Race again</button>
+      <button class="b-ghost" id="btn-copy">Copy result</button>
+    </div>
+    <p class="toast" id="toast"></p>
+    <p class="small"><a href="index.html">Classic game</a></p>`;
+  document.getElementById("btn-again").onclick = () => newRace(R.gender);
+  document.getElementById("btn-copy").onclick = () => {
+    const toast = document.getElementById("toast");
+    const fallback = () => { toast.textContent = share; const r = document.createRange(); r.selectNodeContents(toast); const s = getSelection(); s.removeAllRanges(); s.addRange(r); };
+    try { navigator.clipboard.writeText(share).then(() => toast.textContent = "Copied. Paste it in the group chat.", fallback); } catch (e) { fallback(); }
+  };
+}
+
+document.addEventListener("keydown", e => {
+  if (!R || !R.run || !R.answer) return;
+  const k = e.key.toLowerCase();
+  if (k === "s" || k === "arrowleft") R.answer("skier");
+  if (k === "i" || k === "arrowright") R.answer("ikea");
+});
+
+start();
+</script>
+</body>
+</html>
