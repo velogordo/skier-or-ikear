@@ -14,7 +14,23 @@ for page in index sprint; do
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="Is it a cross-country ski racer or an IKEA product? A quick phone game, with a sprint mode against the World Cup field.">
+HEAD
+    case "$page" in
+      sprint) title="Skier or IKEA-r? Sprint"; desc="Race the World Cup sprint field: is each name a ski racer or an IKEA product? Fastest correct answers win."; url="https://velogordo.github.io/skier-or-ikear/sprint.html" ;;
+      *) title="Skier or IKEA-r?"; desc="Is it a cross-country ski racer or an IKEA product? 7 names. How many can you get?"; url="https://velogordo.github.io/skier-or-ikear/" ;;
+    esac
+    cat <<META
+<meta name="description" content="$desc">
+<meta property="og:type" content="website">
+<meta property="og:title" content="$title">
+<meta property="og:description" content="$desc">
+<meta property="og:url" content="$url">
+<meta property="og:image" content="https://velogordo.github.io/skier-or-ikear/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+META
+    cat <<'HEAD'
 <style>
 :root { color-scheme: light; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
 body { margin: 0; font: 14px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; }
@@ -29,5 +45,6 @@ HEAD
   } > "docs/$page.html"
 done
 cp data.js docs/data.js
+cp og.png docs/og.png
 touch docs/.nojekyll
-echo "Built docs/index.html, docs/sprint.html, docs/data.js"
+echo "Built docs/index.html, docs/sprint.html, docs/data.js, docs/og.png"

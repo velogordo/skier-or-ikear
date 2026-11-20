@@ -3,7 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="Is it a cross-country ski racer or an IKEA product? A quick phone game, with a sprint mode against the World Cup field.">
+<meta name="description" content="Race the World Cup sprint field: is each name a ski racer or an IKEA product? Fastest correct answers win.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Skier or IKEA-r? Sprint">
+<meta property="og:description" content="Race the World Cup sprint field: is each name a ski racer or an IKEA product? Fastest correct answers win.">
+<meta property="og:url" content="https://velogordo.github.io/skier-or-ikear/sprint.html">
+<meta property="og:image" content="https://velogordo.github.io/skier-or-ikear/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
 <style>
 :root { color-scheme: light; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
 body { margin: 0; font: 14px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; }
@@ -179,6 +187,8 @@ button.chosen:disabled { filter: none; box-shadow: 0 0 0 3px var(--bg), 0 0 0 6p
 .recap .what { color: var(--muted); font-size: .85rem; text-align: right; }
 .endrow { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .toast { min-height: 1.2em; text-align: center; color: var(--muted); font-size: .85rem; margin: 0; }
+.share { display: flex; flex-direction: column; gap: 4px; }
+.b-share { width: 100%; min-height: 52px; font-size: 1.05rem; }
 footer { text-align: center; font-size: .72rem; color: var(--muted); line-height: 1.4; }
 
 @media (prefers-reduced-motion: reduce) { .name.pop { animation: none; } button, .dot { transition: none; } }
@@ -269,6 +279,7 @@ details.names summary { cursor: pointer; color: var(--muted); font-weight: 600; 
     <div class="chip" id="chip">Sprint</div>
   </header>
   <main id="main"></main>
+  <div class="share"><button class="b-ghost b-share" id="btn-share">Share with friends</button><p class="toast" id="share-toast"></p></div>
   <footer>Opponents and rankings from the FIS Cross-Country World Cup 2025/26 sprint standings; their race times are simulated. Skier names also from the FIS registers of active Swedish and Norwegian racers. Product names from the IKEA range and Lars Petrus's IKEA Dictionary. Just for fun; not affiliated with FIS or IKEA.</footer>
 </div>
 
@@ -723,6 +734,7 @@ document.addEventListener("keydown", e => {
 });
 
 start();
+setupShare("sprint.html");
 </script>
 </body>
 </html>
