@@ -250,8 +250,8 @@ details.names summary { cursor: pointer; color: var(--muted); font-weight: 600; 
 .podium { width: 100%; font-size: .9rem; color: var(--muted); }
 .podium b { color: var(--ink); }
 /* Wedge of cheese for the rest of the final (a nod to the World Cup's cheese sponsor) */
-.cheese { width: 104px; height: 108px; display: block; margin: 0 auto; overflow: visible; filter: drop-shadow(0 8px 10px rgba(120, 80, 10, .22)); animation: globe-in .6s cubic-bezier(.2,1.4,.4,1) both; }
-.cheese.big { width: 132px; height: 136px; }
+.cheese { width: 140px; height: 107px; display: block; margin: 0 auto; overflow: visible; filter: drop-shadow(0 8px 10px rgba(120, 80, 10, .22)); animation: globe-in .6s cubic-bezier(.2,1.4,.4,1) both; }
+.cheese.big { width: 172px; height: 131px; }
 .cheese-note { font-size: .85rem; color: var(--muted); margin: -4px 0 0; }
 @media (prefers-reduced-motion: reduce) { .cheese { animation: none; } }
 /* Crystal globe for the winner */
@@ -371,15 +371,20 @@ const globeSvg = (size = "") => `<svg class="globe ${size}" viewBox="0 0 120 160
   <path class="spark" d="M104 78 l1.8 5 5 1.8 -5 1.8 -1.8 5 -1.8 -5 -5 -1.8 5 -1.8 Z" fill="#ffffff" stroke="#8fbfe0" stroke-width=".6"/>
 </svg>`;
 
-// A wedge of cheese (dark rind outside, pale paste inside) for finishing 2nd to 6th in the final.
-const cheeseSvg = (size = "") => `<svg class="cheese ${size}" viewBox="0 0 120 124" role="img" aria-label="Wedge of cheese">
+// A quarter wheel of cheese (dark curved rind, tan top, pale cut face) for finishing 2nd to 6th in the final.
+const cheeseSvg = (size = "") => `<svg class="cheese ${size}" viewBox="0 0 160 124" role="img" aria-label="Wedge of cheese">
   <g stroke="#7a4216" stroke-width="2" stroke-linejoin="round">
-    <path d="M42 10 L104 84 L104 96 L80 116 L80 104 Z" fill="#b8652a"/>
-    <path d="M16 94 L80 104 L80 116 L16 106 Z" fill="#9a5220"/>
-    <path d="M42 10 L80 104 L16 94 Z" fill="#f8e6a8"/>
+    <path d="M72 8 Q-2 8 42 76 L42 116 Q-2 48 72 48 Z" fill="#a8581f"/>
+    <path d="M42 76 L152 46 L152 86 L42 116 Z" fill="#f6e2a2"/>
+    <path d="M152 46 L72 8 Q-2 8 42 76 Z" fill="#d99c58"/>
   </g>
-  <path d="M44 28 L62 84" stroke="#ead08a" stroke-width="2.4" stroke-linecap="round" fill="none"/>
-  <path d="M36 52 L44 78" stroke="#ead08a" stroke-width="2" stroke-linecap="round" fill="none"/>
+  <g fill="none" stroke="#c4843f" stroke-width="2">
+    <path d="M136 38 L72 17 Q16 18 49 70"/>
+    <path d="M120 31 L72 26 Q34 28 56 65"/>
+  </g>
+  <g fill="none" stroke="#ead08a" stroke-width="2" stroke-linecap="round">
+    <path d="M60 94 L116 79"/><path d="M76 102 L140 85"/>
+  </g>
 </svg>`;
 
 // ---------- Race simulation ----------
