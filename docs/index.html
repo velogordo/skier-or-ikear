@@ -182,6 +182,9 @@ button.chosen:disabled { filter: none; box-shadow: 0 0 0 3px var(--bg), 0 0 0 6p
 /* End screen */
 .score { font-family: var(--display); font-weight: 800; font-size: clamp(4.5rem, 26vw, 7rem); line-height: .9; font-variant-numeric: tabular-nums; }
 .score span { color: var(--muted); font-size: .45em; }
+.wreath { width: 150px; height: 140px; display: block; margin: 0 auto -6px; overflow: visible; animation: wreath-in .6s cubic-bezier(.2,1.4,.4,1) both; }
+@keyframes wreath-in { from { transform: scale(.4) rotate(-20deg); opacity: 0 } to { transform: none; opacity: 1 } }
+@media (prefers-reduced-motion: reduce) { .wreath { animation: none; } }
 .rank { font-family: var(--display); font-weight: 800; font-size: 1.5rem; margin: 0; text-wrap: balance; }
 .recap { list-style: none; padding: 0; margin: 0; width: 100%; display: flex; flex-direction: column; gap: 6px; text-align: left; }
 .recap li { display: grid; grid-template-columns: 22px 1fr auto; gap: 10px; align-items: baseline; padding: 6px 4px; border-bottom: 1px solid var(--line); font-size: .95rem; }
@@ -451,6 +454,33 @@ function answer(kind) {
 
 function pickOne(a) { return a[Math.floor(Math.random() * a.length)]; }
 
+// A laurel wreath with a red ribbon, for a perfect 7/7.
+function wreathSvg() {
+  const cx = 75, cy = 66, r = 48, rad = d => d * Math.PI / 180;
+  let stems = "", leaves = "";
+  for (const side of [-1, 1]) {
+    const at = d => side < 0 ? d : 180 - d;     // mirror the left branch for the right
+    const p = d => [cx + r * Math.cos(rad(at(d))), cy + r * Math.sin(rad(at(d)))];
+    const [x0, y0] = p(102), [x1, y1] = p(246);
+    stems += `<path d="M${x0.toFixed(1)} ${y0.toFixed(1)} A${r} ${r} 0 0 ${side < 0 ? 1 : 0} ${x1.toFixed(1)} ${y1.toFixed(1)}" fill="none" stroke="#4a6b2f" stroke-width="2"/>`;
+    for (let i = 0; i <= 8; i++) {
+      const d = 108 + i * 16, [x, y] = p(d);
+      const travel = at(d) + 90 * -side;
+      const sides = i === 8 ? [0] : [-38, 38];
+      for (const o of sides) {
+        const rot = travel + o, len = i === 8 ? 9 : 8.5;
+        const lx = x + 7 * Math.cos(rad(rot)), ly = y + 7 * Math.sin(rad(rot));
+        const fill = (i + (o > 0 ? 1 : 0)) % 2 ? "#4f8a3c" : "#6ea84f";
+        leaves += `<ellipse cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" rx="${len}" ry="3.8" fill="${fill}" stroke="#3b6a2c" stroke-width=".8" transform="rotate(${rot.toFixed(0)} ${lx.toFixed(1)} ${ly.toFixed(1)})"/>`;
+      }
+    }
+  }
+  const ribbon = `<path d="M75 112 L60 134 L66 134 L70 140 L76 118 Z M75 112 L90 134 L84 134 L80 140 L74 118 Z" fill="#b8172f"/>
+    <path d="M75 112 Q58 98 56 110 Q56 120 75 112 Z M75 112 Q92 98 94 110 Q94 120 75 112 Z" fill="#d62839" stroke="#9b1426" stroke-width="1"/>
+    <circle cx="75" cy="112" r="4.5" fill="#9b1426"/>`;
+  return `<svg class="wreath" viewBox="0 0 150 140" role="img" aria-label="Laurel wreath">${stems}${leaves}${ribbon}</svg>`;
+}
+
 function renderEnd() {
   const score = game.answers.filter(Boolean).length;
   const rank = [...RANKS].reverse().find(([min]) => score >= min)[1];
@@ -463,6 +493,7 @@ function renderEnd() {
   $main.innerHTML = `
     <section class="card" aria-live="polite">
       <div class="eyebrow">Final score · Game #${game.seed}</div>
+      ${score === ROUNDS ? wreathSvg() : ""}
       <div class="score">${score}<span>/${ROUNDS}</span></div>
       <p class="rank">${esc(rank)}</p>
       <ul class="recap">${rows}</ul>
@@ -481,7 +512,7 @@ function renderEnd() {
 
 function copyScore(score, rank) {
   const grid = game.answers.map(a => a ? "🟩" : "🟥").join("");
-  const text = `Skier or IKEA-r? Game #${game.seed}: ${score}/${ROUNDS} ${grid}\n${rank}\nSame 7 names. Can you beat me?`;
+  const text = `Skier or IKEA-r? Game #${game.seed}: ${score}/${ROUNDS} ${grid}\n${rank}${score === ROUNDS ? " 🌿 Laurel wreath!" : ""}\nSame 7 names. Can you beat me?`;
   shareOrCopy(text, `${SHARE_URL}#game-${game.seed}`, document.getElementById("toast"), "Challenge copied. Paste it in the group chat.");
 }
 
