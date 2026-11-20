@@ -341,9 +341,11 @@ const bothNames = pool.filter(q => q.both);
 const $main = document.getElementById("main");
 const $chip = document.getElementById("chip");
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-const pickOne = a => a[Math.floor(Math.random() * a.length)];
-const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
-const randn = () => { let u = 0, v = 0; while (!u) u = Math.random(); while (!v) v = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
+// All race randomness goes through rnd, which newRace seeds from the race number.
+let rnd = Math.random;
+const pickOne = a => a[Math.floor(rnd() * a.length)];
+const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const randn = () => { let u = 0, v = 0; while (!u) u = rnd(); while (!v) v = rnd(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
 const fmt = t => t.toFixed(1);
 const flag = c => (COUNTRY[c] || ["", ""])[1];
 const nameSize = n => { const len = [...n].length; return `min(${Math.min(4.6, 26 / len).toFixed(2)}rem, ${(115 / len).toFixed(1)}vw)`; };
@@ -406,7 +408,7 @@ function botTime(skill, names) {
   for (const q of names) {
     t += BASE * (0.76 + 0.5 * skill) * Math.exp(randn() * 0.25 - 0.03);
     const acc = 0.95 - 0.18 * skill - 0.07 * (q.d - 1);
-    if (Math.random() > acc) t += penaltyFor(++misses) + STUMBLE;
+    if (rnd() > acc) t += penaltyFor(++misses) + STUMBLE;
   }
   return t;
 }
@@ -419,11 +421,11 @@ function buildField(gender) {
 
 function pickNames(stage) {
   const out = [];
-  if (stage.key === "F" && Math.random() < 0.3) {
+  if (stage.key === "F" && rnd() < 0.3) {
     const b = bothNames.filter(q => !R.used.has(q.n));
     if (b.length) { const q = pickOne(b); R.used.add(q.n); out.push(q); }
   }
-  const nSki = Math.random() < .5 ? Math.floor(stage.n / 2) : Math.ceil(stage.n / 2);
+  const nSki = rnd() < .5 ? Math.floor(stage.n / 2) : Math.ceil(stage.n / 2);
   const kinds = shuffle([...Array(stage.n - out.length)].map((_, i) => i < nSki - out.length ? "skier" : "ikea"));
   for (const kind of kinds) {
     const d = pickOne(stage.diff);
@@ -452,7 +454,7 @@ function advance(results, nTop, nLL) {
 
 function runStage(key, names, youTime) {
   const results = heatsFor(key).map(h =>
-    h.map(e => ({ e, time: e.you ? youTime : botTime(e.skill, names) })).sort((a, b) => a.time - b.time));
+    h.map(e => ({ e, time: e.you ? youTime : e.times[R.stage] })).sort((a, b) => a.time - b.time));
   if (key === "Q") {
     const all = results[0];
     R.qual = all.slice(0, 30).map(x => x.e);
@@ -475,10 +477,16 @@ function runStage(key, names, youTime) {
 // ---------- Race state ----------
 let R = null;
 
-function newRace(gender) {
-  R = { gender, field: buildField(gender), used: new Set(), stage: 0, path: [], out: false };
+// The race number (seed) fixes every round's names and every rival's time in every round,
+// so a challenge link replays the same race however far each player gets.
+function newRace(gender, seed = newSeed(), challenge = false) {
+  rnd = seededRandom(seed * 2 + (gender === "M" ? 0 : 1));
+  R = { gender, seed, challenge, field: buildField(gender), used: new Set(), stage: 0, path: [], out: false };
+  R.plan = STAGES.map(st => pickNames(st));
+  R.field.forEach(e => { if (!e.you) e.times = R.plan.map(names => botTime(e.skill, names)); });
   intro();
 }
+const raceLink = () => `${SHARE_URL}sprint.html#race-${R.gender.toLowerCase()}-${R.seed}`;
 
 function stage() { return STAGES[R.stage]; }
 
@@ -489,7 +497,7 @@ function yourHeat(key) {
 }
 
 // ---------- Screens ----------
-function start() {
+function start(challenge = null) {
   $chip.textContent = "Sprint";
   $main.innerHTML = `
     <section class="card top" style="gap:18px">
@@ -503,11 +511,19 @@ function start() {
       </ul>
       <p class="small">Answer fast, but read first. Wrong answers cost <b class="penalty">+${PENALTY} s</b>, then +${PENALTY + PENALTY_STEP}, +${PENALTY + 2 * PENALTY_STEP}… and you stumble for ${STUMBLE} s. Tapping before you can read the name is a false start. Your rivals are the 2025/26 World Cup sprint field.</p>
     </section>
+    ${challenge ? `
+    <button class="b-next" id="btn-accept">Accept challenge: ${challenge.gender === "M" ? "men's" : "women's"} race #${challenge.seed}</button>
+    <p class="small">Same names and same rivals as the friend who sent it. <a href="#" id="btn-fresh">Race a new one instead</a>.</p>` : `
     <div class="pick">
       <button class="b-pick" id="btn-men">Men's sprint</button>
       <button class="b-pick" id="btn-women">Women's sprint</button>
     </div>
-    <p class="small">Prefer a relaxed game? <a href="index.html">Play the classic 7 questions</a>.</p>`;
+    <p class="small">Prefer a relaxed game? <a href="index.html">Play the classic 7 questions</a>.</p>`}`;
+  if (challenge) {
+    document.getElementById("btn-accept").onclick = () => newRace(challenge.gender, challenge.seed, true);
+    document.getElementById("btn-fresh").onclick = e => { e.preventDefault(); clearHash(); start(); };
+    return;
+  }
   document.getElementById("btn-men").onclick = () => newRace("M");
   document.getElementById("btn-women").onclick = () => newRace("W");
 }
@@ -527,7 +543,7 @@ function intro() {
   let body;
   if (st.key === "Q") {
     const top = R.field.slice(1, 6).map(e => `${esc(e.name)} ${flag(e.nat)}`).join(", ");
-    body = `<div class="eyebrow">Qualification · time trial</div>
+    body = `<div class="eyebrow">${R.challenge ? "Challenge race" : "Race"} #${R.seed} · Qualification</div>
       <div class="title">8 names. Beat the clock.</div>
       <p class="small">60 starters, top 30 go through to the quarterfinals. Favourites: ${top}.</p>`;
   } else {
@@ -545,10 +561,10 @@ function intro() {
 
 async function countdown() {
   const st = stage();
-  R.names = pickNames(st);
+  R.names = R.plan[R.stage];
   const heat = st.key === "Q" ? null : yourHeat(st.key).heat;
-  // Rivals' times for your heat are decided now so the track can show them racing.
-  R.live = heat ? heat.map(e => ({ e, time: e.you ? null : botTime(e.skill, R.names) })) : null;
+  // Rivals' times were fixed when the race was created; the track shows them racing.
+  R.live = heat ? heat.map(e => ({ e, time: e.you ? null : e.times[R.stage] })) : null;
   $main.innerHTML = `<section class="card race">
       ${heat ? `<div class="track" id="track">${heat.map(laneHtml).join("")}</div>` : ""}
       <div class="namebox"><div class="big" id="cd">3</div></div>
@@ -762,7 +778,7 @@ function finishRace() {
   while (!R.finalResult) {
     R.stage++;
     const st = stage();
-    runStage(st.key, pickNames(st), null);
+    runStage(st.key, R.plan[R.stage], null);
   }
   const podium = R.finalResult.slice(0, 3);
   const yourPlace = R.finalResult.findIndex(x => x.e.you) + 1;   // 0 if you weren't in the final
@@ -771,11 +787,12 @@ function finishRace() {
     : lastStep.key === "Q" ? "Out in qualification" : `Out in the ${STAGES.find(s => s.key === lastStep.key).label.toLowerCase()}`;
   const pathHtml = R.path.map((p, i) => `${i ? `<span class="arrow">→</span>` : ""}<span class="step ${p.cls}"><b>${p.key}</b>${p.txt}</span>`).join("");
   const podiumTxt = podium.map((x, i) => `${["🥇","🥈","🥉"][i]} <b>${esc(x.e.you ? "You" : x.e.name)}</b> ${x.e.you ? "" : flag(x.e.nat)}`).join("&nbsp;&nbsp;");
-  const share = `Skier or IKEA-r? Sprint 🏁 ${R.gender === "M" ? "Men" : "Women"}\n` + R.path.map(p => `${p.key} ${p.txt}`).join(" → ")
-    + (yourPlace === 1 ? "\n🏆 Crystal globe!" : yourPlace > 1 ? "\n🧀 Took home the cheese" : "");
+  const share = `Skier or IKEA-r? Sprint 🏁 ${R.gender === "M" ? "Men's" : "Women's"} race #${R.seed}\n` + R.path.map(p => `${p.key} ${p.txt}`).join(" → ")
+    + (yourPlace === 1 ? "\n🏆 Crystal globe!" : yourPlace > 1 ? "\n🧀 Took home the cheese" : "")
+    + "\nSame names, same rivals. Your turn:";
   $chip.textContent = "Sprint";
   $main.innerHTML = `<section class="card" style="gap:16px">
-      <div class="eyebrow">${R.gender === "M" ? "Men's" : "Women's"} sprint</div>
+      <div class="eyebrow">${R.gender === "M" ? "Men's" : "Women's"} sprint · Race #${R.seed}</div>
       ${yourPlace === 1 ? globeSvg("big") : yourPlace > 1 ? cheeseSvg("big") : ""}
       <div class="title">${esc(headline)}</div>
       <div class="path">${pathHtml}</div>
@@ -783,16 +800,13 @@ function finishRace() {
     </section>
     <div class="endrow">
       <button class="b-next" id="btn-again">Race again</button>
-      <button class="b-ghost" id="btn-copy">Copy result</button>
+      <button class="b-ghost" id="btn-copy">Challenge a friend</button>
     </div>
     <p class="toast" id="toast"></p>
     <p class="small"><a href="index.html">Classic game</a></p>`;
-  document.getElementById("btn-again").onclick = () => newRace(R.gender);
-  document.getElementById("btn-copy").onclick = () => {
-    const toast = document.getElementById("toast");
-    const fallback = () => { toast.textContent = share; const r = document.createRange(); r.selectNodeContents(toast); const s = getSelection(); s.removeAllRanges(); s.addRange(r); };
-    try { navigator.clipboard.writeText(share).then(() => toast.textContent = "Copied. Paste it in the group chat.", fallback); } catch (e) { fallback(); }
-  };
+  document.getElementById("btn-again").onclick = () => { clearHash(); newRace(R.gender); };
+  document.getElementById("btn-copy").onclick = () =>
+    shareOrCopy(share, raceLink(), document.getElementById("toast"), "Challenge copied. Paste it in the group chat.");
 }
 
 document.addEventListener("keydown", e => {
@@ -802,6 +816,10 @@ document.addEventListener("keydown", e => {
   if (k === "i" || k === "arrowright") R.answer("ikea");
 });
 
-start();
+{ // A challenge link (#race-m-12345 or #race-w-12345) offers that exact race.
+  const m = location.hash.match(/^#race-([mw])-(\d{5})$/);
+  start(m ? { gender: m[1].toUpperCase(), seed: +m[2] } : null);
+}
 setupShare("sprint.html");
+window.addEventListener("hashchange", () => location.reload());   // a challenge link opened in an open tab
 </script>

@@ -237,38 +237,38 @@ const pool = buildClassicPool();
 
 const $main = document.getElementById("main");
 const $dots = document.getElementById("dots");
-const seen = new Set();
 let game;
 
-function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+function shuffle(a, rnd = Math.random) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 
-function pickRound() {
-  // 3 or 4 of each kind, shuffled; avoid names seen in earlier games until the pool runs low.
-  const nSki = Math.random() < .5 ? 3 : 4;
+// The game number (seed) decides the 7 names, so a challenge link replays the same game.
+function pickRound(rnd) {
+  // 3 or 4 of each kind, shuffled.
+  const nSki = rnd() < .5 ? 3 : 4;
+  const used = new Set();
   const take = (match, k) => {
-    let fresh = pool.filter(q => match(q) && !seen.has(q.n));
-    if (fresh.length < k) { pool.forEach(q => match(q) && seen.delete(q.n)); fresh = pool.filter(match); }
-    return shuffle(fresh).slice(0, k);
+    const picked = shuffle(pool.filter(q => match(q) && !used.has(q.n)), rnd).slice(0, k);
+    picked.forEach(q => used.add(q.n));
+    return picked;
   };
   // About one game in four gets a name that is both a skier and an IKEA product.
-  const both = Math.random() < .25 ? take(q => q.both, 1) : [];
+  const both = rnd() < .25 ? take(q => q.both, 1) : [];
   // Remaining skier slots: about 60% World Cup names, 40% from the FIS registers.
   let nFis = 0;
-  for (let s = 0; s < nSki - both.length; s++) if (Math.random() < .4) nFis++;
-  const qs = shuffle([
+  for (let s = 0; s < nSki - both.length; s++) if (rnd() < .4) nFis++;
+  return shuffle([
     ...both,
     ...take(q => q.tier === "wc", nSki - both.length - nFis),
     ...take(q => q.tier === "fis" && !q.both, nFis),
     ...take(q => q.kind === "ikea", ROUNDS - nSki),
-  ]);
-  qs.forEach(q => seen.add(q.n));
-  return qs;
+  ], rnd);
 }
 
-function newGame() {
-  game = { qs: pickRound(), i: 0, answers: [] };
+function newGame(seed = newSeed(), challenge = false) {
+  game = { seed, challenge, qs: pickRound(seededRandom(seed)), i: 0, answers: [] };
   renderQuestion();
 }
+const eyebrow = () => `${game.challenge ? `Challenge #${game.seed} · ` : ""}Question ${game.i + 1} of ${ROUNDS}`;
 
 function renderDots() {
   $dots.innerHTML = "";
@@ -294,7 +294,7 @@ function renderQuestion() {
   renderDots();
   $main.innerHTML = `
     <section class="card" aria-live="polite">
-      <div class="eyebrow">Question ${game.i + 1} of ${ROUNDS}</div>
+      <div class="eyebrow">${eyebrow()}</div>
       <div class="name pop" style="font-size:${nameSize(q.n)}">${esc(q.n)}</div>
       <p class="hint">${esc(nextPrompt())}</p>
     </section>
@@ -337,7 +337,7 @@ function answer(kind) {
   }
   const card = $main.querySelector(".card");
   card.innerHTML = `
-    <div class="eyebrow">Question ${game.i + 1} of ${ROUNDS}</div>
+    <div class="eyebrow">${eyebrow()}</div>
     <div class="reveal">
       <div class="verdict ${verdict[0]}">${verdict[1]}</div>
       ${badge}
@@ -368,30 +368,26 @@ function renderEnd() {
       <span class="what">${q.both ? "Skier + IKEA" : q.kind === "skier" ? `Skier · ${esc(q.c)}` : esc(q.type)}</span></li>`).join("");
   $main.innerHTML = `
     <section class="card" aria-live="polite">
-      <div class="eyebrow">Final score</div>
+      <div class="eyebrow">Final score · Game #${game.seed}</div>
       <div class="score">${score}<span>/${ROUNDS}</span></div>
       <p class="rank">${esc(rank)}</p>
       <ul class="recap">${rows}</ul>
     </section>
     <div class="endrow">
       <button class="b-next" id="btn-again">Play again</button>
-      <button class="b-ghost" id="btn-copy">Copy score</button>
+      <button class="b-ghost" id="btn-copy">Challenge a friend</button>
     </div>
     <p class="toast" id="toast"></p>
     <a class="sprint-link" href="sprint.html">Try Sprint mode: race the World Cup field →</a>`;
-  document.getElementById("btn-again").addEventListener("click", newGame);
+  document.getElementById("btn-again").addEventListener("click", () => { clearHash(); newGame(); });
   document.getElementById("btn-copy").addEventListener("click", () => copyScore(score, rank));
   document.getElementById("btn-again").focus({ preventScroll: true });
 }
 
 function copyScore(score, rank) {
   const grid = game.answers.map(a => a ? "🟩" : "🟥").join("");
-  const text = `Skier or IKEA-r? ${score}/${ROUNDS} ${grid}\n${rank}`;
-  const toast = document.getElementById("toast");
-  const fallback = () => { toast.textContent = text; const r = document.createRange(); r.selectNodeContents(toast); const s = getSelection(); s.removeAllRanges(); s.addRange(r); };
-  try {
-    navigator.clipboard.writeText(text).then(() => { toast.textContent = "Copied. Paste it in the group chat."; }, fallback);
-  } catch (e) { fallback(); }
+  const text = `Skier or IKEA-r? Game #${game.seed}: ${score}/${ROUNDS} ${grid}\n${rank}\nSame 7 names. Can you beat me?`;
+  shareOrCopy(text, `${SHARE_URL}#game-${game.seed}`, document.getElementById("toast"), "Challenge copied. Paste it in the group chat.");
 }
 
 document.addEventListener("keydown", e => {
@@ -403,6 +399,10 @@ document.addEventListener("keydown", e => {
   }
 });
 
-newGame();
+{ // A challenge link (#game-12345) replays that game; otherwise start a fresh one.
+  const m = location.hash.match(/^#game-(\d{5})$/);
+  m ? newGame(+m[1], true) : newGame();
+}
 setupShare("");
+window.addEventListener("hashchange", () => location.reload());   // a challenge link opened in an open tab
 </script>
