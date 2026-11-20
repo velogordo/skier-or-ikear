@@ -124,6 +124,27 @@ main { flex: 1; display: flex; flex-direction: column; justify-content: center; 
 .tag .prod { font-family: var(--display); font-weight: 800; font-size: 1.6rem; line-height: 1; letter-spacing: .02em; }
 .tag .type { font-weight: 600; font-size: 1rem; margin-top: 4px; }
 .tag .meta { font-size: .8rem; opacity: .8; margin-top: 6px; letter-spacing: .06em; text-transform: uppercase; }
+/* Both: bib and price tag overlap, with a rubber stamp across them */
+.verdict.both { color: var(--ink); }
+.duo { position: relative; display: flex; align-items: center; justify-content: center; padding: 6px 0 46px; max-width: 100%; }
+.duo .bib, .duo .tag { min-width: 0; width: 150px; flex: 0 1 150px; }
+.duo .bib { transform: rotate(-5deg); z-index: 1; padding: 10px 12px 12px; }
+.duo .bib .num { font-size: 2rem; }
+.duo .bib .who { font-size: .95rem; }
+.duo .bib .meta { font-size: .75rem; }
+.duo .tag { transform: rotate(6deg) translateY(8px); margin-left: -6px; padding: 12px 14px 12px 30px; }
+.duo .tag .prod { font-size: 1.25rem; overflow-wrap: anywhere; }
+.duo .tag .type { font-size: .85rem; }
+.stamp {
+  position: absolute; left: 50%; bottom: 0; z-index: 2;
+  transform: translate(-50%, 0) rotate(-6deg);
+  font-family: var(--display); font-weight: 800; font-size: 1.6rem; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--good); border: 4px solid var(--good); border-radius: 10px; padding: 2px 14px;
+  background: color-mix(in srgb, var(--surface) 80%, transparent);
+  animation: stamp .35s cubic-bezier(.2,1.6,.4,1) both;
+}
+@keyframes stamp { from { transform: translate(-50%, 0) rotate(-6deg) scale(2.2); opacity: 0 } to { transform: translate(-50%, 0) rotate(-6deg) scale(1); opacity: 1 } }
+@media (prefers-reduced-motion: reduce) { .stamp { animation: none; } }
 .fact { color: var(--muted); font-size: .95rem; margin: 0; max-width: 32ch; line-height: 1.4; }
 
 .answers { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
@@ -441,17 +462,18 @@ const pool = [
     return "";
   };
   pool.forEach(q => { if (q.kind === "ikea" && !q.fact) q.fact = dictFact(q.n); });
+  // A skier whose surname is also an IKEA name becomes a "both" question: either answer counts.
+  const markBoth = (n, type) => {
+    const s = pool.find(q => q.n === n && q.kind === "skier");
+    if (s && !s.both) s.both = { type, fact: dictFact(n) };
+  };
   IKEA_SERIES.forEach(n => {
-    if (taken.has(n)) return;
+    if (taken.has(n)) return markBoth(n, "Product series");
     taken.add(n);
     pool.push({ kind: "ikea", n, type: "Product series", fact: dictFact(n) });
   });
   IKEA_DICT.forEach(([n]) => {
-    if (taken.has(n)) {
-      const s = pool.find(q => q.n === n && q.kind === "skier");
-      if (s && !s.fact.includes("IKEA")) s.fact += " Also an IKEA product name. Tough one!";
-      return;
-    }
+    if (taken.has(n)) return markBoth(n, "IKEA product name");
     taken.add(n);
     pool.push({ kind: "ikea", n, type: "IKEA product name", fact: dictFact(n) });
   });
@@ -472,12 +494,15 @@ function pickRound() {
     if (fresh.length < k) { pool.forEach(q => match(q) && seen.delete(q.n)); fresh = pool.filter(match); }
     return shuffle(fresh).slice(0, k);
   };
-  // Skier slots: about 60% World Cup names, 40% from the full FIS Swedish register.
+  // About one game in four gets a name that is both a skier and an IKEA product.
+  const both = Math.random() < .25 ? take(q => q.both, 1) : [];
+  // Remaining skier slots: about 60% World Cup names, 40% from the FIS registers.
   let nFis = 0;
-  for (let s = 0; s < nSki; s++) if (Math.random() < .4) nFis++;
+  for (let s = 0; s < nSki - both.length; s++) if (Math.random() < .4) nFis++;
   const qs = shuffle([
-    ...take(q => q.tier === "wc", nSki - nFis),
-    ...take(q => q.tier === "fis", nFis),
+    ...both,
+    ...take(q => q.tier === "wc", nSki - both.length - nFis),
+    ...take(q => q.tier === "fis" && !q.both, nFis),
     ...take(q => q.kind === "ikea", ROUNDS - nSki),
   ]);
   qs.forEach(q => seen.add(q.n));
@@ -527,34 +552,41 @@ function renderQuestion() {
 function answer(kind) {
   if (game.answers.length > game.i) return;
   const q = game.qs[game.i];
-  const ok = kind === q.kind;
+  const ok = q.both ? true : kind === q.kind;
   game.answers.push(ok);
   renderDots();
 
-  let badge;
-  if (q.kind === "skier") {
+  const bib = () => {
     const [cname, flag] = COUNTRY[q.c] || [q.c, ""];
-    badge = `<div class="bib">
+    return `<div class="bib">
         <div class="num">${esc(q.c)}</div>
         <div class="who">${esc(q.full)}</div>
         <div class="meta">${flag} ${esc(cname)} · ${q.tier === "wc" ? "FIS World Cup" : "FIS-registered racer"}</div>
       </div>`;
-  } else {
-    badge = `<div class="tag">
+  };
+  const tag = type => `<div class="tag">
         <div class="prod">${esc(q.n)}</div>
-        <div class="type">${esc(q.type)}</div>
+        <div class="type">${esc(type)}</div>
         <div class="meta">Assembly required</div>
       </div>`;
+
+  let badge, verdict, fact = q.fact;
+  if (q.both) {
+    badge = `<div class="duo">${bib()}${tag(q.both.type)}<div class="stamp">Both!</div></div>`;
+    verdict = ["both", pickOne(["Trick question!", "Plot twist!", "Double agent!"])];
+    fact = [q.fact, q.both.fact].filter(Boolean).join(" ") + " Either answer counts.";
+  } else {
+    badge = q.kind === "skier" ? bib() : tag(q.type);
+    verdict = ok ? ["ok", pickOne(["Correct!", "Nailed it.", "Clean pass.", "Yes!"])]
+                 : ["no", pickOne(["Nope.", "Fell over.", "Wrong wax.", "Missing screw."])];
   }
-  const verdict = ok ? ["ok", pickOne(["Correct!", "Nailed it.", "Clean pass.", "Yes!"])]
-                     : ["no", pickOne(["Nope.", "Fell over.", "Wrong wax.", "Missing screw."])];
   const card = $main.querySelector(".card");
   card.innerHTML = `
     <div class="eyebrow">Question ${game.i + 1} of ${ROUNDS}</div>
     <div class="reveal">
       <div class="verdict ${verdict[0]}">${verdict[1]}</div>
       ${badge}
-      ${q.fact ? `<p class="fact">${esc(q.fact)}</p>` : ""}
+      ${fact ? `<p class="fact">${esc(fact)}</p>` : ""}
     </div>`;
 
   const ans = $main.querySelector(".answers");
@@ -578,7 +610,7 @@ function renderEnd() {
   const rows = game.qs.map((q, k) => `
     <li><span class="mk ${game.answers[k] ? "ok" : "no"}">${game.answers[k] ? "✓" : "✗"}</span>
       <b>${esc(q.n)}</b>
-      <span class="what">${q.kind === "skier" ? `Skier · ${esc(q.c)}` : esc(q.type)}</span></li>`).join("");
+      <span class="what">${q.both ? "Skier + IKEA" : q.kind === "skier" ? `Skier · ${esc(q.c)}` : esc(q.type)}</span></li>`).join("");
   $main.innerHTML = `
     <section class="card" aria-live="polite">
       <div class="eyebrow">Final score</div>
