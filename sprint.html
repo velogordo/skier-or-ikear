@@ -327,7 +327,7 @@ const pool = buildClassicPool();
       else d = q.tier === "wc" ? 1 : 3;
       if (!q.both && /[ØÆÜÉČŠŽŘÝÁÍĆŅ]/.test(q.n)) d = Math.max(1, d - 1);   // letters IKEA never uses
     } else {
-      d = q.type === "IKEA product name" ? 3 : q.type === "Product series" ? 2 : 1;
+      d = q.src === "curated" ? 1 : q.src === "series" ? 2 : 3;   // well-known products easy, catalogue deep cuts hard
       if (q.fact === `Swedish for "${q.n.toLowerCase()}".`) d = 1;            // ALARM, DATA, CHARM...
     }
     q.d = d;
