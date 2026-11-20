@@ -249,6 +249,16 @@ details.names summary { cursor: pointer; color: var(--muted); font-weight: 600; 
 .path .arrow { color: var(--muted); }
 .podium { width: 100%; font-size: .9rem; color: var(--muted); }
 .podium b { color: var(--ink); }
+/* Crystal globe for the winner */
+.globe { width: 120px; height: 160px; display: block; margin: 0 auto; overflow: visible; filter: drop-shadow(0 10px 14px rgba(40, 90, 140, .25)); animation: globe-in .6s cubic-bezier(.2,1.4,.4,1) both; }
+.globe.big { width: 150px; height: 200px; }
+.globe .spark { transform-box: fill-box; transform-origin: center; animation: twinkle 1.8s ease-in-out infinite; }
+.globe .spark:nth-of-type(2) { animation-delay: .6s; } .globe .spark:nth-of-type(3) { animation-delay: 1.2s; }
+.globe .shine { animation: shine 3.2s ease-in-out infinite; }
+@keyframes globe-in { from { transform: translateY(18px) scale(.6); opacity: 0 } to { transform: none; opacity: 1 } }
+@keyframes twinkle { 0%, 100% { transform: scale(.3); opacity: 0 } 50% { transform: scale(1); opacity: 1 } }
+@keyframes shine { 0%, 100% { opacity: .55 } 50% { opacity: .95 } }
+@media (prefers-reduced-motion: reduce) { .globe, .globe .spark, .globe .shine { animation: none; } }
 @media (prefers-reduced-motion: reduce) { .stamp.static, .waiting .row { animation: none; } }
 </style>
 
@@ -329,6 +339,32 @@ const fmt = t => t.toFixed(1);
 const flag = c => (COUNTRY[c] || ["", ""])[1];
 const nameSize = n => { const len = [...n].length; return `min(${Math.min(4.6, 26 / len).toFixed(2)}rem, ${(115 / len).toFixed(1)}vw)`; };
 const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+// Crystal globe, the World Cup trophy, drawn for whoever wins the final.
+const globeSvg = (size = "") => `<svg class="globe ${size}" viewBox="0 0 120 160" role="img" aria-label="Crystal globe trophy">
+  <defs>
+    <radialGradient id="gl-glass" cx="38%" cy="32%" r="75%">
+      <stop offset="0" stop-color="#ffffff"/><stop offset=".35" stop-color="#e3f2fb"/>
+      <stop offset=".75" stop-color="#a9d3ee"/><stop offset="1" stop-color="#6fa9d2"/>
+    </radialGradient>
+    <linearGradient id="gl-base" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#3a4a57"/><stop offset="1" stop-color="#15212b"/></linearGradient>
+    <linearGradient id="gl-gold" x1="0" x2="1"><stop offset="0" stop-color="#b8892e"/><stop offset=".5" stop-color="#f2d48a"/><stop offset="1" stop-color="#b8892e"/></linearGradient>
+    <clipPath id="gl-clip"><circle cx="60" cy="58" r="44"/></clipPath>
+  </defs>
+  <path d="M47 101 L73 101 L70 116 L50 116 Z" fill="#cfe6f5" stroke="#8fbfe0" stroke-width="1"/>
+  <path d="M30 118 L90 118 L96 150 L24 150 Z" fill="url(#gl-base)"/>
+  <rect x="27" y="126" width="66" height="6" fill="url(#gl-gold)"/>
+  <rect x="20" y="148" width="80" height="6" rx="2" fill="#15212b"/>
+  <circle cx="60" cy="58" r="44" fill="url(#gl-glass)" stroke="#8fbfe0" stroke-width="1.5"/>
+  <g clip-path="url(#gl-clip)" fill="none" stroke="#ffffff" stroke-opacity=".7" stroke-width="1.2">
+    <ellipse cx="60" cy="58" rx="44" ry="13"/><ellipse cx="60" cy="40" rx="38" ry="9"/><ellipse cx="60" cy="76" rx="38" ry="9"/>
+    <ellipse cx="60" cy="58" rx="15" ry="44"/><ellipse cx="60" cy="58" rx="32" ry="44"/>
+  </g>
+  <ellipse class="shine" cx="44" cy="36" rx="13" ry="8" fill="#ffffff" transform="rotate(-30 44 36)"/>
+  <path class="spark" d="M100 18 l2.5 7 7 2.5 -7 2.5 -2.5 7 -2.5 -7 -7 -2.5 7 -2.5 Z" fill="#f2d48a"/>
+  <path class="spark" d="M16 30 l2 5.5 5.5 2 -5.5 2 -2 5.5 -2 -5.5 -5.5 -2 5.5 -2 Z" fill="#ffffff" stroke="#8fbfe0" stroke-width=".6"/>
+  <path class="spark" d="M104 78 l1.8 5 5 1.8 -5 1.8 -1.8 5 -1.8 -5 -5 -1.8 5 -1.8 Z" fill="#ffffff" stroke="#8fbfe0" stroke-width=".6"/>
+</svg>`;
 
 // ---------- Race simulation ----------
 function botTime(skill, names) {
@@ -611,7 +647,7 @@ async function results(you) {
     if (st.key === "F") {
       outcome = me.place;
       R.path.push({ key: "F", txt: ord(me.place), cls: "" });
-      const head = me.place === 1 ? `<div class="verdict ok">World Cup sprint champion!</div>`
+      const head = me.place === 1 ? `${globeSvg()}<div class="verdict ok">World Cup sprint champion!</div>`
         : `<div class="verdict ${me.place <= 3 ? "ok" : "both"}">${ord(me.place)} in the final${me.place <= 3 ? ". Podium!" : ""}</div>`;
       html = `<div class="eyebrow">${label}</div>${head}${resultsTable(heat, { nTop: 0 })}`;
     } else {
@@ -683,10 +719,12 @@ function finishRace() {
     : lastStep.key === "Q" ? "Out in qualification" : `Out in the ${STAGES.find(s => s.key === lastStep.key).label.toLowerCase()}`;
   const pathHtml = R.path.map((p, i) => `${i ? `<span class="arrow">→</span>` : ""}<span class="step ${p.cls}"><b>${p.key}</b>${p.txt}</span>`).join("");
   const podiumTxt = podium.map((x, i) => `${["🥇","🥈","🥉"][i]} <b>${esc(x.e.you ? "You" : x.e.name)}</b> ${x.e.you ? "" : flag(x.e.nat)}`).join("&nbsp;&nbsp;");
-  const share = `Skier or IKEA-r? Sprint 🏁 ${R.gender === "M" ? "Men" : "Women"}\n` + R.path.map(p => `${p.key} ${p.txt}`).join(" → ");
+  const share = `Skier or IKEA-r? Sprint 🏁 ${R.gender === "M" ? "Men" : "Women"}\n` + R.path.map(p => `${p.key} ${p.txt}`).join(" → ")
+    + (yourPlace === 1 ? "\n🏆 Crystal globe!" : "");
   $chip.textContent = "Sprint";
   $main.innerHTML = `<section class="card" style="gap:16px">
       <div class="eyebrow">${R.gender === "M" ? "Men's" : "Women's"} sprint</div>
+      ${yourPlace === 1 ? globeSvg("big") : ""}
       <div class="title">${esc(headline)}</div>
       <div class="path">${pathHtml}</div>
       <p class="podium">Podium: ${podiumTxt}</p>
