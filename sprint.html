@@ -280,8 +280,12 @@ details.names summary { cursor: pointer; color: var(--muted); font-weight: 600; 
 <script src="data.js"></script>
 <script>
 // ---------- Settings ----------
-const PENALTY = 3;          // seconds added for a wrong answer
-const BASE = 2.7;           // seconds per name scale; tuned by simulating thousands of races
+const PENALTY = 4;          // seconds for the first wrong answer in a round...
+const PENALTY_STEP = 2;     // ...and each further miss costs 2 s more (4, 6, 8...)
+const STUMBLE = 1.5;        // seconds frozen after a miss while the clock keeps running
+const FALSE_START = 0.4;    // answering faster than this counts as wrong
+const penaltyFor = miss => PENALTY + PENALTY_STEP * (miss - 1);
+const BASE = 2.9;           // seconds per name scale; tuned by simulating thousands of races
 const FIELD = 60;           // starters in qualification (you + 59)
 const STAGES = [
   { key: "Q",  label: "Qualification", short: "Q",  n: 8, diff: [1, 1, 2] },
@@ -398,11 +402,11 @@ const cheeseSvg = (size = "") => `<svg class="cheese ${size}" viewBox="0 0 164 1
 
 // ---------- Race simulation ----------
 function botTime(skill, names) {
-  let t = 0;
+  let t = 0, misses = 0;
   for (const q of names) {
     t += BASE * (0.76 + 0.5 * skill) * Math.exp(randn() * 0.25 - 0.03);
     const acc = 0.95 - 0.18 * skill - 0.07 * (q.d - 1);
-    if (Math.random() > acc) t += PENALTY;
+    if (Math.random() > acc) t += penaltyFor(++misses) + STUMBLE;
   }
   return t;
 }
@@ -497,7 +501,7 @@ function start() {
         <li><b>SF</b><span>Semifinal: same again, with harder names.</span></li>
         <li><b>F</b><span>Final: 5 names, 6 racers, one champion.</span></li>
       </ul>
-      <p class="small">Answer fast. A wrong answer adds <b class="penalty">+${PENALTY} s</b>. Your rivals are the 2025/26 World Cup sprint field.</p>
+      <p class="small">Answer fast, but read first. Wrong answers cost <b class="penalty">+${PENALTY} s</b>, then +${PENALTY + PENALTY_STEP}, +${PENALTY + 2 * PENALTY_STEP}… and you stumble for ${STUMBLE} s. Tapping before you can read the name is a false start. Your rivals are the 2025/26 World Cup sprint field.</p>
     </section>
     <div class="pick">
       <button class="b-pick" id="btn-men">Men's sprint</button>
@@ -566,11 +570,12 @@ function race() {
       <button class="b-skier" id="btn-skier" data-k="skier">Skier<small>on snow</small></button>
       <button class="b-ikea" id="btn-ikea" data-k="ikea">IKEA-r<small>in a flat box</small></button>
     </div>`;
-  const S = R.run = { i: 0, banked: 0, qStart: 0, active: false, answers: [], done: false };
+  const S = R.run = { i: 0, banked: 0, qStart: 0, active: false, stumbleStart: 0, misses: 0, answers: [], done: false };
   const $clock = document.getElementById("clock"), $count = document.getElementById("count");
   const $name = document.getElementById("name"), $flash = document.getElementById("flash"), $box = document.getElementById("namebox");
   const runners = heat ? [...document.querySelectorAll("#track .lane")] : [];
-  const clock = () => S.banked + (S.active ? (performance.now() - S.qStart) / 1000 : 0);
+  const clock = () => S.banked + (S.active ? (performance.now() - S.qStart) / 1000 : 0)
+    + (S.stumbleStart ? (performance.now() - S.stumbleStart) / 1000 : 0);
 
   const draw = () => {
     const t = S.ff ?? clock();
@@ -597,16 +602,33 @@ function race() {
   const answer = kind => {
     if (!S.active || S.done) return;
     const q = R.names[S.i];
-    S.banked += (performance.now() - S.qStart) / 1000; S.active = false;
-    const ok = q.both ? true : kind === q.kind;
-    if (!ok) S.banked += PENALTY;
+    const took = (performance.now() - S.qStart) / 1000;
+    S.banked += took; S.active = false;
+    const falseStart = took < FALSE_START;
+    const ok = !falseStart && (q.both ? true : kind === q.kind);
     S.answers.push(ok);
     const what = q.both ? "Both! Skier and IKEA" : q.kind === "skier" ? `Skier · ${flag(q.c)} ${q.c}` : `IKEA · ${q.type}`;
-    $flash.innerHTML = ok ? `✓ ${esc(what)}` : `✗ ${esc(what)} · <span class="penalty">+${PENALTY} s</span>`;
-    $flash.className = "flash " + (ok ? "ok" : "no"); $box.className = "namebox " + (ok ? "ok" : "no");
     S.i++;
-    if (S.i >= st.n) { S.done = true; setTimeout(finish, 650); }
-    else setTimeout(show, ok ? 380 : 650);
+    const last = S.i >= st.n;
+    if (ok) {
+      $flash.innerHTML = `✓ ${esc(what)}`;
+      $flash.className = "flash ok"; $box.className = "namebox ok";
+      if (last) { S.done = true; setTimeout(finish, 650); } else setTimeout(show, 380);
+      return;
+    }
+    // Miss: growing time penalty, then a stumble with the buttons locked and the clock still running.
+    const pen = penaltyFor(++S.misses);
+    S.banked += pen;
+    $flash.innerHTML = `${falseStart ? "False start!" : `✗ ${esc(what)}`} · <span class="penalty">+${pen} s</span> · stumbled`;
+    $flash.className = "flash no"; $box.className = "namebox no";
+    document.querySelectorAll(".answers button").forEach(b => b.disabled = true);
+    S.stumbleStart = performance.now();
+    setTimeout(() => {
+      S.stumbleStart = 0; S.banked += STUMBLE;
+      if (last) { S.done = true; finish(); return; }
+      document.querySelectorAll(".answers button").forEach(b => b.disabled = false);
+      show();
+    }, STUMBLE * 1000);
   };
   R.answer = answer;
   document.querySelectorAll(".answers button").forEach(b => b.onclick = () => answer(b.dataset.k));
