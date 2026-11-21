@@ -325,6 +325,7 @@ const PROMPTS = [
   "Grinds up Alpe Cermis, or wobbles on uneven floors?",
   "Eats 6,000 calories a day, or sold beside the meatballs?",
   "Has a coach, a physio and a wax tech, or a 24-step diagram with no words?",
+  "Owns a pair of rock skis, or a pair of LACK tables?",
 ];
 const RIGHT = ["Correct!", "Nailed it.", "Clean pass.", "Perfect kick wax.", "Nailed the double pole.",
   "Fully assembled. No leftover screws.", "Podium!", "Glide for days."];
@@ -659,14 +660,14 @@ function answer(kind) {
   const feed = game.loppet && !last && (game.i + 1) % 10 === 0;
   const next = document.createElement("button");
   next.className = "b-next"; next.id = "btn-next";
-  next.innerHTML = last ? (game.loppet ? "Cross the finish line" : "See my score") : feed ? "Feed station" : "Next";
+  next.innerHTML = last ? (game.loppet ? "Collapse across the finish line" : "See my score") : feed ? "Feed station" : "Next";
   const at = game.i;
   const go = () => { if (game.i !== at) return; game.i++; last ? renderEnd() : feed ? renderFeed() : renderQuestion(); };
   next.addEventListener("click", go);
   ans.replaceWith(next);
   next.focus({ preventScroll: true });
   // In the Loppet, right answers move on by themselves; wrong ones wait so you can read them.
-  if (game.loppet && ok && !q.both) setTimeout(go, 1500);
+  if (game.loppet && ok && !q.both && !last) setTimeout(go, 1500);   // the finish line waits for your tap
 }
 
 function pickOne(a) { return a[Math.floor(Math.random() * a.length)]; }
