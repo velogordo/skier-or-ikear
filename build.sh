@@ -31,9 +31,10 @@ HEAD
 <meta name="twitter:card" content="summary_large_image">
 META
     cat <<'ICONS'
-<link rel="icon" href="icons/favicon.ico" sizes="48x48">
-<link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png">
-<link rel="icon" type="image/png" sizes="16x16" href="icons/icon-16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/dark/icon-32.png" media="(prefers-color-scheme: dark)">
+<link rel="icon" type="image/png" sizes="16x16" href="icons/dark/icon-16.png" media="(prefers-color-scheme: dark)">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png" media="(prefers-color-scheme: light)">
+<link rel="icon" type="image/png" sizes="16x16" href="icons/icon-16.png" media="(prefers-color-scheme: light)">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="manifest" href="icons/site.webmanifest">
 <meta name="theme-color" content="#77010b">
