@@ -93,6 +93,7 @@ body {
 header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .logo { font-family: var(--display); font-weight: 800; font-size: 1.15rem; letter-spacing: -.01em; line-height: 1; }
 .logo { display: inline-flex; align-items: center; gap: 7px; }
+.on-title .logo .mark { display: none; }
 .logo .mark { width: 26px; height: 26px; flex: none; background: var(--logo-mark) center / contain no-repeat; }
 @media (max-width: 360px) { .logo .mark { width: 22px; height: 22px; gap: 6px; } }
 .logo .s { color: var(--wax); }
@@ -337,6 +338,7 @@ function pickRound(rnd) {
 let onTitle = false;
 function renderTitle() {
   onTitle = true;
+  document.body.classList.add("on-title");      // the big logo replaces the small header one
   $dots.hidden = true;
   $main.innerHTML = `
     <section class="title-screen">
@@ -378,6 +380,7 @@ function renderTitle() {
 
 function newGame(seed = newSeed(), challenge = false) {
   onTitle = false;
+  document.body.classList.remove("on-title");
   $dots.hidden = false;
   game = { seed, challenge, qs: pickRound(seededRandom(seed)), i: 0, answers: [] };
   renderQuestion();
