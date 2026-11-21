@@ -49,6 +49,7 @@ img { max-width: 100%; }
   --good: #1f7a4f;
   --bad: #b3261e;
   --logo-mark: url("icons/logo-light.png");
+  --logo-mark-lg: url("icons/logo-light-lg.png");
   --display: "Bricolage Grotesque", "Arial Black", system-ui, sans-serif;
   --body: "Familjen Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
 }
@@ -58,6 +59,7 @@ img { max-width: 100%; }
     --track: rgba(233,240,244,.05); --wax: #f0604c; --wax-ink: #1a0a07; --kraft: #dcae73; --kraft-ink: #24180a;
     --good: #4cc38a; --bad: #ff7a70; color-scheme: dark;
     --logo-mark: url("icons/logo-dark.png");
+    --logo-mark-lg: url("icons/logo-dark-lg.png");
   }
 }
 :root[data-theme="dark"] {
@@ -65,6 +67,7 @@ img { max-width: 100%; }
   --track: rgba(233,240,244,.05); --wax: #f0604c; --wax-ink: #1a0a07; --kraft: #dcae73; --kraft-ink: #24180a;
   --good: #4cc38a; --bad: #ff7a70; color-scheme: dark;
     --logo-mark: url("icons/logo-dark.png");
+    --logo-mark-lg: url("icons/logo-dark-lg.png");
 }
 
 html, body { height: 100%; }
@@ -220,6 +223,8 @@ a.logo { text-decoration: none; color: inherit; }
 .kicker { font-size: .68rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); text-align: center; margin: 0; }
 .big-title { font-family: var(--display); font-weight: 800; font-size: clamp(2.6rem, 13vw, 3.4rem); line-height: .92; letter-spacing: -.02em; margin: 6px 0 0; text-align: center; text-wrap: balance; }
 .big-title .s { color: var(--wax); } .big-title .i { color: var(--kraft); white-space: nowrap; }
+.hero-mark { width: 72px; height: 72px; margin: 0 auto -4px; background: var(--logo-mark-lg) center / contain no-repeat; filter: drop-shadow(0 4px 10px rgba(0,0,0,.18)); animation: pop .4s ease-out both; }
+@media (prefers-reduced-motion: reduce) { .hero-mark { animation: none; } }
 .premise { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 14px 16px; text-align: center; display: flex; flex-direction: column; gap: 4px; }
 .premise .q { font-family: var(--display); font-weight: 800; font-size: 1.15rem; line-height: 1.15; margin: 0; color: var(--ink); text-wrap: balance; }
 .premise .q + .q { color: var(--wax); }
@@ -335,6 +340,7 @@ function renderTitle() {
   $dots.hidden = true;
   $main.innerHTML = `
     <section class="title-screen">
+      <div class="hero-mark" aria-hidden="true"></div>
       <p class="kicker">A game for skiers and flat-pack survivors</p>
       <h1 class="big-title"><span class="s">Skier</span> or <span class="i">IKEA-r</span>?</h1>
       <div class="premise">
