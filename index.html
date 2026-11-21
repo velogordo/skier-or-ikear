@@ -18,6 +18,7 @@
   --kraft-ink: #2a1d0c;
   --good: #1f7a4f;
   --bad: #b3261e;
+  --logo-mark: url("icons/logo-light.png");
   --display: "Bricolage Grotesque", "Arial Black", system-ui, sans-serif;
   --body: "Familjen Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
 }
@@ -26,12 +27,14 @@
     --bg: #0e171f; --surface: #17232d; --ink: #e9f0f4; --muted: #93a4b1; --line: #2a3a47;
     --track: rgba(233,240,244,.05); --wax: #f0604c; --wax-ink: #1a0a07; --kraft: #dcae73; --kraft-ink: #24180a;
     --good: #4cc38a; --bad: #ff7a70; color-scheme: dark;
+    --logo-mark: url("icons/logo-dark.png");
   }
 }
 :root[data-theme="dark"] {
   --bg: #0e171f; --surface: #17232d; --ink: #e9f0f4; --muted: #93a4b1; --line: #2a3a47;
   --track: rgba(233,240,244,.05); --wax: #f0604c; --wax-ink: #1a0a07; --kraft: #dcae73; --kraft-ink: #24180a;
   --good: #4cc38a; --bad: #ff7a70; color-scheme: dark;
+    --logo-mark: url("icons/logo-dark.png");
 }
 
 html, body { height: 100%; }
@@ -56,6 +59,9 @@ body {
 }
 header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .logo { font-family: var(--display); font-weight: 800; font-size: 1.15rem; letter-spacing: -.01em; line-height: 1; }
+.logo { display: inline-flex; align-items: center; gap: 7px; }
+.logo .mark { width: 26px; height: 26px; flex: none; background: var(--logo-mark) center / contain no-repeat; }
+@media (max-width: 360px) { .logo .mark { width: 22px; height: 22px; gap: 6px; } }
 .logo .s { color: var(--wax); }
 .logo .i { color: var(--kraft); }
 .dots { display: flex; gap: 6px; }
@@ -212,7 +218,7 @@ a.b-mode.b-race { background: var(--wax); color: var(--wax-ink); }
 
 <div class="app">
   <header>
-    <a class="logo" href="#" id="logo" aria-label="Skier or IKEA-r? title screen"><span class="s">Skier</span> or <span class="i">IKEA-r</span>?</a>
+    <a class="logo" href="#" id="logo" aria-label="Skier or IKEA-r? title screen"><span class="mark" aria-hidden="true"></span><span><span class="s">Skier</span> or <span class="i">IKEA-r</span>?</span></a>
     <div class="hright">
       <div class="dots" id="dots" aria-label="Progress"></div>
     </div>
