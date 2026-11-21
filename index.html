@@ -105,6 +105,8 @@ main { flex: 1; display: flex; flex-direction: column; justify-content: center; 
 .verdict { font-family: var(--display); font-weight: 800; font-size: 1.5rem; }
 .verdict.ok { color: var(--good); }
 .verdict.no { color: var(--bad); }
+.infraction { margin: -8px 0 0; font-size: .85rem; color: var(--muted); max-width: 32ch; text-wrap: balance; }
+.sanctions { margin: -6px 0 0; font-size: .85rem; color: var(--muted); }
 .bib {
   background: #fff; color: #15212b; border: 3px solid var(--wax);
   border-radius: 10px; padding: 12px 18px 14px; min-width: 220px; max-width: 100%; box-sizing: border-box;
@@ -254,8 +256,28 @@ const PROMPTS = [
 ];
 const RIGHT = ["Correct!", "Nailed it.", "Clean pass.", "Perfect kick wax.", "Nailed the double pole.",
   "Fully assembled. No leftover screws.", "Podium!", "Glide for days."];
-const WRONG = ["Nope.", "Wrong wax.", "Fell on the downhill.", "Missing screw.", "Built it upside down.",
-  "Broke a pole.", "Herringboned the wrong way.", "Step 14 makes no sense.", "Klister on the glide zone."];
+// Wrong answers are sanctioned FIS-style: a verbal reprimand, then written reprimands ("yellow cards").
+// A second written reprimand means DSQ, but the jury lets you keep skiing.
+const INFRACTIONS = ["Herringbone in the classic track.", "Extra push out of the apex.", "Obstruction: cut into the flat-pack lane.",
+  "Skating in a classic race.", "Skis not parallel on the straight.", "Lane change in the finish straight.",
+  "Forced your way into the corner.", "Klister on the glide zone."];
+let lastInfraction = -1;
+function nextInfraction() {                          // never the same one twice in a row
+  let k; do { k = Math.floor(Math.random() * INFRACTIONS.length); } while (k === lastInfraction);
+  lastInfraction = k; return INFRACTIONS[k];
+}
+function sanction(nWrong) {
+  if (nWrong === 1) return ["Verbal reprimand.", "Consider yourself warned."];
+  if (nWrong === 2) return ["🟨 Written reprimand.", "That one stays on your record."];
+  if (nWrong === 3) return ["🟨🟨 Second yellow: DSQ!", "The jury lets you keep skiing. This time."];
+  return [pickOne(["🟨 Another written reprimand.", "🟨 Yellow card. Again.", "🟨 Jury is reviewing the video."]), "The race director would like a word."];
+}
+function sanctionSummary(answers) {
+  const w = answers.filter(a => !a).length;
+  if (!w) return "Clean race. No reprimands.";
+  if (w === 1) return "1 verbal reprimand.";
+  return `1 verbal reprimand, ${w - 1} written reprimand${w > 2 ? "s" : ""}${w > 2 ? " (DSQ waived)" : ""}.`;
+}
 let lastPrompt = -1;
 function nextPrompt() {
   let i;
@@ -416,20 +438,22 @@ function answer(kind) {
         <div class="meta">Assembly required</div>
       </div>`;
 
-  let badge, verdict, fact = q.fact;
+  let badge, verdict, infraction = "", fact = q.fact;
   if (q.both) {
     badge = `<div class="duo">${bib()}${tag(q.both.type)}<div class="stamp">Both!</div></div>`;
     verdict = ["both", pickOne(["Trick question!", "Plot twist!", "Double agent!"])];
     fact = [q.fact, q.both.fact].filter(Boolean).join(" ") + " Either answer counts.";
   } else {
     badge = q.kind === "skier" ? bib() : tag(q.type);
-    verdict = ok ? ["ok", pickOne(RIGHT)] : ["no", pickOne(WRONG)];
+    if (ok) verdict = ["ok", pickOne(RIGHT)];
+    else { const [label, note] = sanction(game.answers.filter(a => !a).length); verdict = ["no", label]; infraction = `${nextInfraction()} ${note}`; }
   }
   const card = $main.querySelector(".card");
   card.innerHTML = `
     <div class="eyebrow">${eyebrow()}</div>
     <div class="reveal">
       <div class="verdict ${verdict[0]}">${verdict[1]}</div>
+      ${infraction ? `<p class="infraction">${esc(infraction)}</p>` : ""}
       ${badge}
       ${fact ? `<p class="fact">${esc(fact)}</p>` : ""}
     </div>`;
@@ -490,6 +514,7 @@ function renderEnd() {
       ${score === ROUNDS ? wreathSvg() : ""}
       <div class="score">${score}<span>/${ROUNDS}</span></div>
       <p class="rank">${esc(rank)}</p>
+      <p class="sanctions">${esc(sanctionSummary(game.answers))}</p>
       <ul class="recap">${rows}</ul>
     </section>
     <div class="endrow">

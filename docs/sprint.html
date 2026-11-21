@@ -246,7 +246,7 @@ a { color: inherit; }
 .namebox { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 150px; border-radius: 14px; transition: background .15s; }
 .namebox.ok { background: color-mix(in srgb, var(--good) 14%, transparent); }
 .namebox.no { background: color-mix(in srgb, var(--bad) 14%, transparent); }
-.flash { min-height: 1.3em; font-weight: 700; font-size: .95rem; }
+.flash { min-height: 2.6em; font-weight: 700; font-size: .95rem; line-height: 1.3; }
 .flash.ok { color: var(--good); } .flash.no { color: var(--bad); }
 .penalty { color: var(--bad); font-weight: 800; }
 .big { font-family: var(--display); font-weight: 800; font-size: 5rem; line-height: 1; }
@@ -324,6 +324,14 @@ const PENALTY_STEP = 2;     // ...and each further miss costs 2 s more (4, 6, 8.
 const STUMBLE = 1.5;        // seconds frozen after a miss while the clock keeps running
 const FALSE_START = 0.4;    // answering faster than this counts as wrong
 const penaltyFor = miss => PENALTY + PENALTY_STEP * (miss - 1);
+// Misses are sanctioned FIS-style (a written reprimand is the race director's "yellow card").
+// The penalties are unchanged; only the wording follows the reprimand ladder.
+function sanctionLabel(miss) {
+  if (miss === 1) return "Verbal reprimand";
+  if (miss === 2) return "🟨 Written reprimand";
+  if (miss === 3) return "🟨🟨 Second yellow";
+  return "🟨 Another yellow";
+}
 const BASE = 2.9;           // seconds per name scale; tuned by simulating thousands of races
 const FIELD = 60;           // starters in qualification (you + 59)
 const STAGES = [
@@ -570,7 +578,7 @@ let R = null;
 // so a challenge link replays the same race however far each player gets.
 function newRace(gender, seed = newSeed(), challenge = false) {
   rnd = seededRandom(seed * 2 + (gender === "M" ? 0 : 1));
-  R = { gender, seed, challenge, field: buildField(gender), used: new Set(), stage: 0, path: [], out: false };
+  R = { gender, seed, challenge, field: buildField(gender), used: new Set(), stage: 0, path: [], out: false, misses: 0 };
   R.plan = STAGES.map(st => pickNames(st));
   R.field.forEach(e => { if (!e.you) e.times = R.plan.map(names => botTime(e.skill, names)); });
   intro();
@@ -598,7 +606,7 @@ function start(challenge = null) {
         <li><b>SF</b><span>Semifinal: same again, with harder names.</span></li>
         <li><b>F</b><span>Final: 5 names, 6 racers, one champion.</span></li>
       </ul>
-      <p class="small">Answer fast, but read first. Wrong answers cost <b class="penalty">+${PENALTY} s</b>, then +${PENALTY + PENALTY_STEP}, +${PENALTY + 2 * PENALTY_STEP}… and you stumble for ${STUMBLE} s. Tapping before you can read the name is a false start. Your rivals are the 2025/26 World Cup sprint field.</p>
+      <p class="small">Answer fast, but read first. Wrong answers draw a reprimand from the jury: a verbal one, then yellow cards. Each costs time, <b class="penalty">+${PENALTY} s</b>, then +${PENALTY + PENALTY_STEP}, +${PENALTY + 2 * PENALTY_STEP}… and you stumble for ${STUMBLE} s. Tapping before you can read the name is a false start. Your rivals are the 2025/26 World Cup sprint field.</p>
     </section>
     ${challenge ? `
     <button class="b-next" id="btn-accept">Accept challenge: ${challenge.gender === "M" ? "men's" : "women's"} race #${challenge.seed}</button>
@@ -642,7 +650,7 @@ function intro() {
           <li><b>SF</b><span>Semifinal: same again, with harder names.</span></li>
           <li><b>F</b><span>Final: 5 names, 6 racers, one champion.</span></li>
         </ul>
-        <p class="small" style="margin-top:8px">Wrong answers cost <b class="penalty">+${PENALTY} s</b>, then +${PENALTY + PENALTY_STEP}, +${PENALTY + 2 * PENALTY_STEP}… and you stumble for ${STUMBLE} s. Tapping before you can read the name is a false start.</p>
+        <p class="small" style="margin-top:8px">Wrong answers draw a reprimand from the jury: a verbal one, then yellow cards. Each costs time, <b class="penalty">+${PENALTY} s</b>, then +${PENALTY + PENALTY_STEP}, +${PENALTY + 2 * PENALTY_STEP}… and you stumble for ${STUMBLE} s. Tapping before you can read the name is a false start.</p>
       </details>`;
   } else {
     const { i, heat } = yourHeat(st.key);
@@ -733,7 +741,8 @@ function race() {
     // Miss: growing time penalty, then a stumble with the buttons locked and the clock still running.
     const pen = penaltyFor(++S.misses);
     S.banked += pen;
-    $flash.innerHTML = `${falseStart ? "False start!" : `✗ ${esc(what)}`} · <span class="penalty">+${pen} s</span> · stumbled`;
+    R.misses++;
+    $flash.innerHTML = `${falseStart ? "False start!" : `✗ ${esc(what)}`}<br>${sanctionLabel(S.misses)} · <span class="penalty" style="white-space:nowrap">+${pen} s</span>`;
     $flash.className = "flash no"; $box.className = "namebox no";
     document.querySelectorAll(".answers button").forEach(b => b.disabled = true);
     S.stumbleStart = performance.now();
@@ -897,6 +906,7 @@ function finishRace() {
       ${consol ? `<p class="prize-note">${consol.note}</p>` : ""}
       <div class="path">${pathHtml}</div>
       <p class="podium">Podium: ${podiumTxt}</p>
+      <p class="small">${R.misses ? `Jury report: ${R.misses} reprimand${R.misses > 1 ? "s" : ""} across your heats.` : "Jury report: clean race, no reprimands."}</p>
     </section>
     <div class="endrow">
       <button class="b-next" id="btn-again">Race again</button>
