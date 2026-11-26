@@ -54,7 +54,8 @@ const SKIERS = [
   ["HYVÄRINEN","Perttu Hyvärinen","FIN","Distance skier."],
   ["CYR","Antoine Cyr","CAN","Quebec distance skier."],
   ["LÉVEILLÉ","Olivier Léveillé","CAN","Quebec distance skier."],
-  ["STEWART-JONES","Katherine Stewart-Jones","CAN","Canada's top women's distance skier."],
+  ["HOLLMANN","Max Hollmann","CAN","Canadian World Cup racer."],
+  ["DROLET","Jasmine Drolet","CAN","B.C. racer from Rossland."],
   ["EIDUKA","Patricija Eiduka","LAT","Latvia's World Cup regular."],
 
   // More Norway
